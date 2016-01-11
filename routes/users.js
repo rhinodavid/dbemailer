@@ -13,8 +13,8 @@ var router 			= express.Router();
 var mongoose 		= require('mongoose');
 var authenticate	= require('./authentication');
 
-var port = process.env.PORT || 3000; //used to create, sign and verify tokens
-mongoose.connect(config.database);
+//var port = process.env.PORT || 3000; //used to create, sign and verify tokens
+//mongoose.connect(config.database);
 
 router.route('/testuser')	
 	.get(function (request, response) {
@@ -32,6 +32,7 @@ router.route('/testuser')
 		});
 		
 	});
+
 
 
 

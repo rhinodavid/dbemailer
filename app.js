@@ -4,7 +4,10 @@ var app                         = express();
 var morgan                      = require('morgan');
 var config                      = require('./config');
 var users                       = require('./routes/users');
-
+var db                          = require('./routes/db');
+var mongoose                    = require('mongoose');
+var port = process.env.PORT || 3000; //used to create, sign and verify tokens
+mongoose.connect(config.database);
 
 app.use(morgan('dev'));
 
@@ -12,6 +15,7 @@ app.use(express.static('public'));
 
 
 app.use('/users', users);
+app.use('/db', db);
 
 // development error handler
 // will print stacktrace
@@ -28,8 +32,8 @@ if (app.get('env') === 'development') {
 // production error handler
 // no stacktraces leaked to user
 app.use(function(error, request, response, next) {
-    res.status(err.status || 500);
-    res.render('error.ejs', {
+    response.status(error.status || 500);
+    response.render('error.ejs', {
         message: error.message,
         error: {}
     });
