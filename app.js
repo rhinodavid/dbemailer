@@ -32,11 +32,12 @@ if (app.get('env') === 'development') {
 // production error handler
 // no stacktraces leaked to user
 app.use(function(error, request, response, next) {
-    response.status(error.status || 500);
-    response.render('error.ejs', {
+    console.log("ERROR: " + error.message);
+    response.status(error.status || 500).send('error');
+    /*response.render('error.ejs', {
         message: error.message,
         error: {}
-    });
+    });*/
 });
 
 app.use(function(request, response, next) {

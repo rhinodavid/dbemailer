@@ -14,6 +14,7 @@ var router 			= express.Router();
 var mongoose 		= require('mongoose');
 var authenticate	= require('./authentication');
 var url 			= require('url');
+var request_mod		= require('request');
 
 
 router.route('/addoauth')
@@ -25,30 +26,64 @@ router.route('/addoauth')
 		if (error) {
 			return response.status(400).send('Error:' + error_description);
 		} else {
-			//save credentials
-			
-			//clear out database (only saving one dropbox)
-			Dropbox.remove({}, function (error) {
+
+			// we have a valid code, now make a request the the dropbox API
+			// to get a token
+
+			var options = {//may not need this
+				protocol: 'https',
+				hostname: 'api.dropboxapi.com',
+				path: '/1/oauth2/token',
+				method: 'POST'
+			};
+
+			var post_data = {
+				code: code,
+				grant_type: 'authorization_code',
+				client_id: privateConfig.dbAppKey,
+				client_secret: privateConfig.dbAppSecret,
+				redirect_uri: 'http://localhost:3000/db/addoauth'
+			};
+
+			request_mod.post({url: 'https://api.dropboxapi.com/1/oauth2/token', form: post_data, json: true},
+				function (error, httpResponse, body){
 				if (error) {
+					console.log('error in post' + error);
 					throw error;
 				} else {
-					//create the new entry
-					console.log('saving code: '+code);
-					var db = new Dropbox({
-						code: code
-					});
-					db.save(function (error, db){
-						if (error) {
-							throw error;
-						} else {
-							//render a success message and redirect to admin page
-							console.log("Saved Db" + db);
-							response.send("success");
-							//response.redirect('/admin.html');
-						}
-					});
+					if (httpResponse.statusCode != 200) {
+						//there was an error
+						console.log("Error exchanging dropbox code for token");
+						console.log("Error: " + body.error);
+						console.log("Description: " + body.error_description);
+						response.status(400).send("Error connecting to Dropbox " + body.error_description);
+					} else {
+						//no error.. save token and redirect user
+
+						//clear out database since we're only holding 1 token
+						Dropbox.remove({}, function (error) {
+							if (error) {
+								throw error;
+							} else {
+								//create the new entry
+								var db = new Dropbox({
+									access_token: body.access_token,
+									token_type: body.token_type,
+									uid: body.uid
+								});
+
+								db.save(function (error, db){
+									if (error) {
+										throw error;
+									} else {
+										response.redirect('/admin.html');
+									}
+								});
+							}
+						});
+					}
 				}
-			})
+			});
 		}
 	})
 

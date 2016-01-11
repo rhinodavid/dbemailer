@@ -2,7 +2,7 @@ var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 
 var dropboxSchema = new Schema({
-	code: String,
+	//code: String,
 	access_token: String,
 	token_type: String, //always 'bearer'
 	uid: String,
