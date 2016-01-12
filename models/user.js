@@ -5,7 +5,7 @@ var userSchema = new Schema({
 	name: String,
 	email: { type: String, required: true, unique: true },
 	password: { type: String, select: true },
-	status: String,
+	status: { type: String, default: "pending-user" },
 	admin: { type: Boolean, default: false },
 	created_at: { type: Date, default: Date.now },
 	updated_at: { type: Date }

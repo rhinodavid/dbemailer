@@ -1,5 +1,6 @@
 var express 		= require('express');
 var bodyParser 		= require('body-parser');
+var cookieParser	= require('cookie-parser');
 var urlencode 		= bodyParser.urlencoded({extended: false});
 var jsonencode 		= bodyParser.json();
 var jwt 			= require('jsonwebtoken');
@@ -8,13 +9,15 @@ var privateConfig	= require('./../private-config');
 var config 			= require('./../config');
 var mongoose 		= require('mongoose');
 
+
 //mongoose.connect(config.database);
 
 var authenticate = express.Router();
 
-authenticate.use(urlencode, jsonencode, function (request, response, next){
-	var token = request.body.token || request.query.token || request.headers['x-access-token'];
-
+authenticate.use(urlencode, jsonencode, cookieParser(), function (request, response, next){
+	console.log('authenticating');
+	console.log(request.cookies.token);
+	var token = request.body.token || request.query.token || request.headers['x-access-token'] || request.cookies.token;
 	if (token) {
 		//verifies secret and checks exp
 		jwt.verify(token, privateConfig.secret, function (error, decoded){
@@ -46,7 +49,14 @@ authenticate.use(urlencode, jsonencode, function (request, response, next){
 		});
 	} else {
 		//there was no token
-		return response.status(403).json({success: false, message: 'No token provided'});
+		if (request.headers['X-Requested-With'] == 'XMLHttpRequest') {
+			//request probably came from jQuery, Angular, etc.
+			return response.status(403).json({"success": false, "message": "No token provided"});
+					} else {
+						//request probably came from a browser
+						//direct user to login page with a redirect back to this path"
+			return response.redirect('/login?redirect=' + request.originalUrl);
+		}
 	}
 
 });

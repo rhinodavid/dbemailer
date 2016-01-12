@@ -12,7 +12,7 @@ $(function(){
 			content = '<span><b>' + user.name + '</b></span>&nbsp;&nbsp;&nbsp;&nbsp;';
 			content += '<span><small>' + user.email + '</small></span>&nbsp;&nbsp;&nbsp;&nbsp;';
 			content += '<a href="#" id="status-change-link" data-userid="' + user._id + '"><span><small>' + user.status + '</small></span></a>&nbsp;&nbsp;&nbsp;&nbsp;';
-			content += '<a href="#" id="delete-button" data-userid="' + user._id + '"><img src="delete.png" width="15px"></img></a>';
+			content += '<a href="#" id="delete-button" data-userid="' + user._id + '"><img src="/delete.png" width="15px"></img></a>';
 			list.push($('<li>', { html: content }));
 		}
 		$('.user-list').append(list);

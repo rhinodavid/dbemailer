@@ -23,6 +23,7 @@ router.route('/testuser')
 			name: 'David',
 			email: 'davidtest@gmail.com',
 			password: 'password',
+			status: 'confirmed',
 			admin: true
 		});
 		tester.save(function (error) {
@@ -154,6 +155,7 @@ router.route('/:id')
 
 router.route('/authenticate')
 	.post(urlencode, jsonencode, function (request, response){
+		console.log('user/authenticate: ' + request.body.email + " " + request.body.password);
 		if (!request.body.password) {
 			//no password was provided
 			return response.status(400).json({ success: false, message: 'No password provided'});
@@ -165,12 +167,12 @@ router.route('/authenticate')
 				throw error;
 			}
 			if (!user) {
-				response.status(400).json({ success: false, message: 'Authentication failed. User not found.'});
+				response.status(400).json({ "success": false, "message": "Authentication failed. User not found."});
 			} else if (user) {
 				//check if password matches **** NEED TO UPDATE TO HASHING ****
 				console.log(user);
 				if (user.password != request.body.password) {
-					response.status(400).json({ success: false, message: 'Authentication failed. Wrong password.'}); //SEE what the status code is here	
+					response.status(400).json({ "success": false, "message": "Authentication failed. Wrong password."}); //SEE what the status code is here	
 				} else {
 					//if user is found and password is right
 					//create a token
