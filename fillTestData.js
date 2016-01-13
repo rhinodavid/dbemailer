@@ -12,7 +12,7 @@ var name = null;
 var email = null;
 var status = null;
 
-for (var i=0; i<25; i++) {
+for (var i=0; i<5; i++) {
 	var rand = Math.random();
 	if (rand < .3333333) {
 		status = "pending-user";

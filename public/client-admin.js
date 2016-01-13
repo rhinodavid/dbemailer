@@ -45,7 +45,7 @@ $(function(){
 			data: {
 				"status": "confirmed"
 			}
-		}).done(function(response){
+		}).success(function(response){
 			target.text(response.status);
 		});
 

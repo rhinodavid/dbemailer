@@ -62,7 +62,14 @@ router.route('/')
 					throw error;
 				}
 			} else {
-				response.status(201).json(user);
+				response.status(201).json(
+					{
+						"_id": user._id,
+						"name": user.name,
+						"email": user.email,
+						"status": user.status
+					}
+				);
 			}
 		});
 	})
@@ -80,8 +87,11 @@ router.route('/')
 router.route('/:id')
 	.delete(authenticate, function(request, response){
 		var id = request.params.id;
-		if (!request.decoded.admin || (request.decoded._id != id)) {
-			return response.status(403).json({message: 'Administrator access or deleting user required'});
+		console.log("admin?:" + request.decoded.admin);
+		if (!request.decoded.admin) {
+			if (request.decoded._id != id) {
+				return response.status(403).json({message: 'Administrator access or deleting user required'});
+			}
 		} else {
 			User.findOneAndRemove(id, function (error) {
 				if (error) {
@@ -110,21 +120,31 @@ router.route('/:id')
 	.put(authenticate, jsonencode, urlencode, function(request, response){
 	//currently only updates user status
 		var id = request.params.id;
-
-		if (!request.decoded.admin || (request.decoded._id != id)) {
-			return response.status(403).json({success: false, message: 'Administrator access or deleting user required'});
-		}
+		var requesterId = request.decoded._id;
+		var requesterAdmin = request.decoded.admin;
+		var requesterIsUser = false;
 
 		var status = request.body.status;
+
+		if (requesterId === id) {
+			// The person making the request is the user
+			requesterIsUser = true;
+		}
+
+		console.log("User ID: " +  id);
+		console.log("Requester ID: " + requesterId);
+		console.log("Requester is user: " + requesterIsUser);
+
+
+		if (!(requesterAdmin || requesterIsUser)) {
+			// You must be an admin or the user to modfiy anything
+			return response.status(403).json({success: false, message: 'Administrator access or modifying user required'});
+		}
 
 		if ((status == 'confirmed') && !request.decoded.admin) {
 			return response.status(403).json({success: false, message: 'Administrator is required to confirm user'});
 		}
 
-		console.log("Status is: "+status);
-		//if (status) console.log('truthy');
-		//if ((status != 'confirmed') || (status != 'pending-user') || (status != 'pending-admin')) console.log('second part true');
-		
 		if (status && !((status == 'confirmed') || (status == 'pending-user') || (status == 'pending-admin'))) {
 			//A status was provided but it was bad
 			response.status(400).send('Invalid status type');
@@ -135,18 +155,28 @@ router.route('/:id')
 			return false;
 		} else {
 			//A valid status was provided
-			User.findByIdAndUpdate(id, {status: status}, {new: true}, function (error, user){
+			console.log("Attempting to find user.." + id);
+			User.findById(id, function (error, user){
 				if (error) {
+					console.log('some error..');
 					if(/not found/.test(error.message)) {
 						response.status(400).send('User not found');
 						return false;
 					} else {
-						response.status(400).send('Error updating user');
-						return false;
+						// generic error
+						throw error;
 					}
 				} else {
-					//No error
-					response.status(200).json(user);
+					console.log('no error');
+					console.log("found user: " + user.name);
+					user.status = status;
+					user.save(function(error, user) {
+						if (error) {
+							return response.status(400).json({"success": false, "message": "Error updating user"});
+						} else {
+							response.status(200).json({_id: user._id, status: user.status, email: user.email, name: user.name});
+						}
+					});
 				}
 			});
 		}
@@ -170,25 +200,30 @@ router.route('/authenticate')
 				response.status(400).json({ "success": false, "message": "Authentication failed. User not found."});
 			} else if (user) {
 				//check if password matches **** NEED TO UPDATE TO HASHING ****
-				console.log(user);
-				if (user.password != request.body.password) {
-					response.status(400).json({ "success": false, "message": "Authentication failed. Wrong password."}); //SEE what the status code is here	
-				} else {
-					//if user is found and password is right
-					//create a token
-					var payload = {
-						_id: user._id,
-					};
-					var token = jwt.sign(payload, privateConfig.secret, {
-						expiresIn: '7 days' //expires in 7 days
-					});
 
-					response.json({
-						success: true,
-						message: 'Token is included in response',
-						token: token
-					})
-				}
+				user.comparePassword(request.body.password, function (error, isMatch){
+					if (error) throw error;
+					if (isMatch) {
+						console.log("Setting token for user: " + user.name);
+						console.log("And ID: " + user._id);
+						var payload = {
+							_id: user._id,
+						};
+						var token = jwt.sign(payload, privateConfig.secret, {
+							expiresIn: '7 days' //expires in 7 days
+						});
+
+						response.json({
+							"success": true,
+							"message": 'Token is included in response',
+							"token": token
+						})
+
+					} else {
+						//wrong password
+						return response.status(400).json({ "success": false, "message": "Authentication failed. Wrong password."});
+					}
+				});
 			}
 
 		});

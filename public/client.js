@@ -57,7 +57,11 @@ $(function(){
 				document.cookie="token=" + response.token;
 				//$.cookie('token', response.token);
 				var redirectUrl = $.getUrlVar('redirect');
-				window.location.replace(redirectUrl);// + "?token=" + window.sessionStorage.accessToken);
+				if (redirectUrl) {
+					window.location.replace(redirectUrl);
+				} else {
+					window.location.replace('/');
+				}
 			})
 			.error(function(error){
 				console.log(error);
