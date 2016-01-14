@@ -28,6 +28,7 @@ app.use('/db', db);
 
 
 app.get('/', function (request, response, next) {
+    console.log('getting home');
     response.render('home');
 });
 
