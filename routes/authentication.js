@@ -5,7 +5,6 @@ var urlencode 		= bodyParser.urlencoded({extended: false});
 var jsonencode 		= bodyParser.json();
 var jwt 			= require('jsonwebtoken');
 var User 			= require('./../models/user');
-var privateConfig	= require('./../private-config');
 var config 			= require('./../config');
 var mongoose 		= require('mongoose');
 
@@ -18,7 +17,7 @@ authenticate.use(urlencode, jsonencode, cookieParser(), function (request, respo
 	var token = request.body.token || request.query.token || request.headers['x-access-token'] || request.cookies.token;
 	if (token) {
 		//verifies secret and checks exp
-		jwt.verify(token, privateConfig.secret, function (error, decoded){
+		jwt.verify(token, process.env.SECRET, function (error, decoded){
 			//console.log('Verified token. ID is :' + decoded._id);
 			if (error) {
 				if (error.name == 'TokenExpiredError') {

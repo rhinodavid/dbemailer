@@ -1,11 +1,11 @@
 var express 		= require('express');
+var app 			= require('./../app');
 var bodyParser 		= require('body-parser');
 var urlencode 		= bodyParser.urlencoded({extended: false});
 var jsonencode 		= bodyParser.json();
 var assert 			= require('assert');
 var mongo 			= require('mongodb');
 var config 			= require('./../config');
-var privateConfig 	= require('./../private-config');
 var jwt 			= require('jsonwebtoken');
 var User 			= require('./../models/user');
 var validator 		= require('validator');
@@ -13,8 +13,6 @@ var router 			= express.Router();
 var mongoose 		= require('mongoose');
 var authenticate	= require('./authentication');
 
-//var port = process.env.PORT || 3000; //used to create, sign and verify tokens
-//mongoose.connect(config.database);
 
 router.route('/testuser')	
 	.get(function (request, response) {
@@ -209,7 +207,7 @@ router.route('/authenticate')
 						var payload = {
 							_id: user._id,
 						};
-						var token = jwt.sign(payload, privateConfig.secret, {
+						var token = jwt.sign(payload, process.env.SECRET, {
 							expiresIn: '7 days' //expires in 7 days
 						});
 

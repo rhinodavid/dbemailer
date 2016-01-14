@@ -1,4 +1,4 @@
 node_modules
 .DS_Store
 data
-private-config.js
+private-config.js.env

@@ -5,7 +5,6 @@ var jsonencode 		= bodyParser.json();
 var assert 			= require('assert');
 var mongo 			= require('mongodb');
 var config 			= require('./../config');
-var privateConfig 	= require('./../private-config');
 var jwt 			= require('jsonwebtoken');
 var User 			= require('./../models/user');
 var Dropbox 		= require('./../models/dropbox');
@@ -40,8 +39,8 @@ router.route('/addoauth')
 			var post_data = {
 				code: code,
 				grant_type: 'authorization_code',
-				client_id: privateConfig.dbAppKey,
-				client_secret: privateConfig.dbAppSecret,
+				client_id: process.env.DB_APP_KEY,
+				client_secret: process.env.DB_APP_SECRET,
 				redirect_uri: 'http://localhost:3000/db/addoauth'
 			};
 

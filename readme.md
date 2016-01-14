@@ -4,13 +4,12 @@ The app watches a specific Dropbox account. When a new file is added to the Drop
 
 ##Getting Started
 
-Clone the repo. In the root folder, create a `private-config.js` file. This file should have the following contents:
+Clone the repo. In the root folder, create a `.env` file. This file should have the following contents:
 
-	module.exports = {
-		'secret': 'some-secret'
-		'dbAppKey' : 'dropbox-app-key',
-		'dbAppSecret': 'dropbox-app-secret'
-	}
+	NODE_ENV=development
+	SECRET=random-string
+	DB_APP_KEY=dropbox-app-key
+	DB_APP_SECRET=dropbox-app-secret
 
 The `secret` is used to sign JSON Web Tokens issued to users and can be any random string of charachters. `dbAppKey` and `dbAppSecret` come from your Dropbox developer page.
 

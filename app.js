@@ -1,5 +1,4 @@
-var express             = require("express");
-
+var express                     = require("express");
 var app                         = express();
 var morgan                      = require('morgan');
 var config                      = require('./config');
@@ -8,8 +7,13 @@ var authenticate                = require('./routes/authentication');
 var db                          = require('./routes/db');
 var mongoose                    = require('mongoose');
 var exphbs                      = require('express-handlebars');
+var nodeEnvFile                 = require('node-env-file');
 var port = process.env.PORT || 3000; //used to create, sign and verify tokens
 mongoose.connect(config.database);
+
+// use .env for enviornment variables in development
+// set them via heroku for production
+nodeEnvFile(__dirname + '/.env', {raise: false});
 
 app.engine('handlebars', exphbs({defaultLayout: 'main'}));
 app.set('view engine', 'handlebars');
@@ -38,7 +42,7 @@ app.get('/login', function (request, response, next) {
 
 // development error handler
 // will print stacktrace
-if (app.get('env') === 'development') {
+if (process.env.NODE_ENV === 'development') {
     app.use(function(error, request, response, next) {
         response.status(error.status || 500);
         response.render('error', {
