@@ -2,6 +2,23 @@
   "name": "dbemailer",
   "version": "0.0.1",
   "dependencies": {
+    "bcrypt": {
+      "version": "0.8.5",
+      "from": "bcrypt@*",
+      "resolved": "https://registry.npmjs.org/bcrypt/-/bcrypt-0.8.5.tgz",
+      "dependencies": {
+        "bindings": {
+          "version": "1.2.1",
+          "from": "bindings@1.2.1",
+          "resolved": "https://registry.npmjs.org/bindings/-/bindings-1.2.1.tgz"
+        },
+        "nan": {
+          "version": "2.0.5",
+          "from": "nan@2.0.5",
+          "resolved": "https://registry.npmjs.org/nan/-/nan-2.0.5.tgz"
+        }
+      }
+    },
     "body-parser": {
       "version": "1.14.2",
       "from": "body-parser@*",
@@ -108,6 +125,23 @@
               }
             }
           }
+        }
+      }
+    },
+    "cookie-parser": {
+      "version": "1.4.1",
+      "from": "cookie-parser@*",
+      "resolved": "https://registry.npmjs.org/cookie-parser/-/cookie-parser-1.4.1.tgz",
+      "dependencies": {
+        "cookie": {
+          "version": "0.2.3",
+          "from": "cookie@0.2.3",
+          "resolved": "https://registry.npmjs.org/cookie/-/cookie-0.2.3.tgz"
+        },
+        "cookie-signature": {
+          "version": "1.0.6",
+          "from": "cookie-signature@1.0.6",
+          "resolved": "https://registry.npmjs.org/cookie-signature/-/cookie-signature-1.0.6.tgz"
         }
       }
     },
@@ -979,6 +1013,11 @@
           "resolved": "https://registry.npmjs.org/on-headers/-/on-headers-1.0.1.tgz"
         }
       }
+    },
+    "node-env-file": {
+      "version": "0.1.8",
+      "from": "node-env-file@*",
+      "resolved": "https://registry.npmjs.org/node-env-file/-/node-env-file-0.1.8.tgz"
     },
     "request": {
       "version": "2.67.0",
