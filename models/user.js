@@ -1,6 +1,7 @@
-var mongoose = require('mongoose');
-var Schema = mongoose.Schema;
-var bcrypt = require('bcrypt');
+var mongoose 	= require('mongoose');
+var jwt			= require('jsonwebtoken');
+var Schema 		= mongoose.Schema;
+var bcrypt 		= require('bcrypt');
 var SALT_WORK_FACTOR = 10;
 
 // See http://devsmash.com/blog/password-authentication-with-mongoose-and-bcrypt for
@@ -62,6 +63,23 @@ userSchema.methods.comparePassword = function(candidatePassword, cb) {
 		if (error) return cb(error);
 		cb(null, isMatch);
 	});
+};
+
+userSchema.methods.generateToken = function(cb) {
+	var user = this;
+	console.log("user.js: generating token for user: "+ user.name);
+	console.log("users.js: and email: "+ user.email);
+	var payload = {
+		_id: user._id,
+	};
+	var token = jwt.sign(payload, process.env.SECRET, {
+		expiresIn: '7 days' //expires in 7 days
+	});
+	if(cb) {
+		cb(null, token);
+	} else {
+		return token;
+	}	
 };
 
 var User = mongoose.model('User', userSchema);

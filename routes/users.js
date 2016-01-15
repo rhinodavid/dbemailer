@@ -33,7 +33,7 @@ router.route('/testuser')
 	});
 
 router.route('/confirmemail/:token')
-.get('/confirmemail/:token', function(request, response) {
+.get(function(request, response) {
     var token = request.params.token;
     if(!token) {
         response.render('emailerror');
@@ -58,16 +58,13 @@ router.route('/confirmemail/:token')
                 			case "confirmed":
                 				response.render('titleandmessage', {
                 					"title": "You're already confirmed.",
-                					"message": "Your email address has already been confirmed.
-                					 You should already be receiving emails."
+                					"message": "Your email address has already been confirmed. You should already be receiving emails."
                 				});
                 				break;
                 			case "pending-admin":
                 				response.render('titleandmessage', {
                 					"title": "Pending administrator confirmation",
-                					"message": "You've already confirmed your email address.
-                					Once an administrator confirms you you'll begin receiving 
-                					emails."
+                					"message": "You've already confirmed your email address. Once an administrator confirms you you'll begin receiving emails."
                 				});
                 				break;
                 			case "pending-user":
@@ -78,9 +75,7 @@ router.route('/confirmemail/:token')
                 							"error": "There was an error confirming your email."
                 						});
                 					} else {
-                						var message = "Congratulations " + user.name + ", your email has
-                						been confirmed. Once an administrator also confirms it, you'll begin
-                						receiving emails.";
+                						var message = "Congratulations " + user.name + ", your email has been confirmed. Once an administrator also confirms it, you'll begin receiving emails.";
                 						response.render('titleandmessage'), {
                 							"title": "Email confirmed",
                 							"message": message
@@ -266,14 +261,8 @@ router.route('/authenticate')
 				user.comparePassword(request.body.password, function (error, isMatch){
 					if (error) throw error;
 					if (isMatch) {
-						console.log("Setting token for user: " + user.name);
-						console.log("And ID: " + user._id);
-						var payload = {
-							_id: user._id,
-						};
-						var token = jwt.sign(payload, process.env.SECRET, {
-							expiresIn: '7 days' //expires in 7 days
-						});
+						
+						var token = user.generateToken();
 
 						response.json({
 							"success": true,

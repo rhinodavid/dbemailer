@@ -9,12 +9,12 @@ var exphbs                      = require('express-handlebars');
 var nodeEnvFile                 = require('node-env-file');
 var port = process.env.PORT || 3000; //used to create, sign and verify tokens
 
-var databaseUri = process.env.MONGOLAB_URI || process.env.DATABASE;
-mongoose.connect(databaseUri);
-
 // use .env for enviornment variables in development
 // set them via heroku for production
 nodeEnvFile(__dirname + '/.env', {raise: false});
+
+var databaseUri = process.env.MONGOLAB_URI || process.env.DATABASE;
+mongoose.connect(databaseUri);
 
 app.engine('handlebars', exphbs({defaultLayout: 'main'}));
 app.set('view engine', 'handlebars');
@@ -41,30 +41,6 @@ app.get('/admin', authenticate, function (request, response, next){
 app.get('/login', function (request, response, next) {
     response.render('login');
 });
-
-app.get('/confirmemail/:token', function(request, response) {
-    var token = request.params.token;
-    if(!token) {
-        response.render('emailerror');
-    } else {
-        jwt.verify(token, process.env.SECRET, function (error, decoded){
-            if (error) {
-                if (error.name == 'TokenExpiredError') {
-                    response.render('emailerror',
-                        { "message": "Your confirmation link has expired. Please sign up again."
-                    });
-                } else {
-                    response.render('emailerror');
-                }
-            }
-            var _id = decoded._id
-        });
-    }
-});
-
-
-
-
 
 
 // development error handler
