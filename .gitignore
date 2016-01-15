@@ -1,5 +1,7 @@
 node_modules
 .DS_Store
 data
-private-config.js.env
+private-config.js
+.env
 .remoteDb
+config.js
