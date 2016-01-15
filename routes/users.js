@@ -91,7 +91,7 @@ router.route('/:id')
 				return response.status(403).json({message: 'Administrator access or deleting user required'});
 			}
 		} else {
-			User.findOneAndRemove(id, function (error) {
+			User.findOneAndRemove({_id: id}, function (error) {
 				if (error) {
 					response.status(400).send('Error removing user');
 				} else {
