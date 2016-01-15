@@ -280,4 +280,8 @@ router.route('/authenticate')
 		});
 	});
 
+function sendConfirmationEmail(user) {
+	
+}
+
 module.exports = router;
