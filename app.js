@@ -42,6 +42,31 @@ app.get('/login', function (request, response, next) {
     response.render('login');
 });
 
+app.get('/confirmemail/:token', function(request, response) {
+    var token = request.params.token;
+    if(!token) {
+        response.render('emailerror');
+    } else {
+        jwt.verify(token, process.env.SECRET, function (error, decoded){
+            if (error) {
+                if (error.name == 'TokenExpiredError') {
+                    response.render('emailerror',
+                        { "message": "Your confirmation link has expired. Please sign up again."
+                    });
+                } else {
+                    response.render('emailerror');
+                }
+            }
+            var _id = decoded._id
+        });
+    }
+});
+
+
+
+
+
+
 // development error handler
 // will print stacktrace
 if (process.env.NODE_ENV === 'development') {

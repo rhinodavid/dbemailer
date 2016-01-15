@@ -32,7 +32,71 @@ router.route('/testuser')
 		
 	});
 
-
+router.route('/confirmemail/:token')
+.get('/confirmemail/:token', function(request, response) {
+    var token = request.params.token;
+    if(!token) {
+        response.render('emailerror');
+    } else {
+        jwt.verify(token, process.env.SECRET, function (error, decoded){
+            if (error) {
+                if (error.name == 'TokenExpiredError') {
+                    response.render('emailerror',
+                        { "message": "Your confirmation link has expired. Please sign up again."
+                    });
+                } else {
+                    response.render('emailerror');
+                }
+            } else {
+                //there is no error, find the decoded id's user and confirm them
+                var id = decoded._id;
+                User.findById(id, function (error, user){
+                	if (error) {
+                		response.render('emailerror', {"message": "Could not find user."});
+                	} else {
+                		switch (user.status) {
+                			case "confirmed":
+                				response.render('titleandmessage', {
+                					"title": "You're already confirmed.",
+                					"message": "Your email address has already been confirmed.
+                					 You should already be receiving emails."
+                				});
+                				break;
+                			case "pending-admin":
+                				response.render('titleandmessage', {
+                					"title": "Pending administrator confirmation",
+                					"message": "You've already confirmed your email address.
+                					Once an administrator confirms you you'll begin receiving 
+                					emails."
+                				});
+                				break;
+                			case "pending-user":
+                				user.status = "pending-admin";
+                				user.save(function (error, user) {
+                					if (error) {
+                						response.render('error', {
+                							"error": "There was an error confirming your email."
+                						});
+                					} else {
+                						var message = "Congratulations " + user.name + ", your email has
+                						been confirmed. Once an administrator also confirms it, you'll begin
+                						receiving emails.";
+                						response.render('titleandmessage'), {
+                							"title": "Email confirmed",
+                							"message": message
+                						};
+                					}
+                				})
+                			default:
+                				response.render('error', {"message": "There was an error confirming your email"});
+                		}
+                		
+                	}
+                });
+            }
+        });
+    }
+});
 
 
 router.route('/')
