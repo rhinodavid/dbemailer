@@ -57,6 +57,17 @@ authenticate.use(urlencode, jsonencode, cookieParser(), function (request, respo
 					if (error) {
 						throw error;
 					} else {
+						if (!user) {
+							// no user is found with that ID
+							if (request.headers['X-Requested-With'] == 'XMLHttpRequest') {
+								//request probably came from jQuery, Angular, etc.
+								return response.status(400).json({"success": false, "message": "Failed to authenticate token"});
+							} else {
+								//request probably came from a browser
+								//direct user to login page with a redirect back to this path"
+							return response.redirect('/login?redirect=' + request.originalUrl);
+							}
+						}
 						console.log("Authenticating user email: " + user.email);
 						console.log("With id: " + user._id);
 						console.log("Admin status: " + user.admin);
