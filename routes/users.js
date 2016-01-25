@@ -336,7 +336,7 @@ function sendConfirmationEmail(user, app) {
 	}
 	console.log("getting domain..");
 	var domain = process.env.DOMAIN;
-	var httpScheme = process.env.HTTP_SCHEME || "http://";
+	var httpScheme = process.env.HTTP_SCHEME || "https://";
 	console.log(domain);
 	var token = user.generateToken();
 	var link = httpScheme + domain + '/users/confirmemail/' + token;

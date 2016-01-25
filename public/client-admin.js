@@ -1,3 +1,5 @@
+
+
 $(function(){
 	$('.alert').hide();
 
@@ -50,5 +52,30 @@ $(function(){
 		});
 
 	});
+
+	// CONFIGURE THE DROPBOX CONNECT BUTTON
+	$.ajax({
+		type: 'GET',
+		url: '/db/dbauthurl'
+	}).done(function(response){
+		$('a#db-connect').attr("href", response);
+	});
+
+	// SHOW THE CONNECTED DROPBOX DATA
+	$.ajax({
+		type: "GET",
+		url: '/db/accountinfo'
+	}).error(function(response){
+		// Show a no dropbox connected notification
+		$('#dropbox-info').html("<span class='text-warning'>No Dropbox connected</span>");
+	}).success(function(response){
+		// Display the dropbox info
+		var data = jQuery.parseJSON(response);
+		console.log(data);
+		var name = data.name.display_name;
+		var email = data.email;
+		$('#dropbox-info').html("<h5>"+name+"</h5><span class='small muted'>"+email+"</span>");
+	});
+	
 
 });
