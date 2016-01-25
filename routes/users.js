@@ -1,5 +1,5 @@
 var express 		= require('express');
-var app 			= require('./../app');
+//var app 			= require('./../app');
 var bodyParser 		= require('body-parser');
 var urlencode 		= bodyParser.urlencoded({extended: false});
 var jsonencode 		= bodyParser.json();
@@ -12,6 +12,7 @@ var validator 		= require('validator');
 var router 			= express.Router();
 var mongoose 		= require('mongoose');
 var authenticate	= require('./authentication');
+var exphbs          = require('express-handlebars');
 
 
 router.route('/testuser')	
@@ -51,6 +52,7 @@ router.route('/confirmemail/:token')
                 //there is no error, find the decoded id's user and confirm them
                 var id = decoded._id;
                 User.findById(id, function (error, user){
+                	console.log("CONFIRM USER: Found user: " + user.name);
                 	if (error) {
                 		response.render('emailerror', {"message": "Could not find user."});
                 	} else {
@@ -66,6 +68,7 @@ router.route('/confirmemail/:token')
                 					"title": "Pending administrator confirmation",
                 					"message": "You've already confirmed your email address. Once an administrator confirms you you'll begin receiving emails."
                 				});
+                				return;
                 				break;
                 			case "pending-user":
                 				user.status = "pending-admin";
@@ -76,12 +79,13 @@ router.route('/confirmemail/:token')
                 						});
                 					} else {
                 						var message = "Congratulations " + user.name + ", your email has been confirmed. Once an administrator also confirms it, you'll begin receiving emails.";
-                						response.render('titleandmessage'), {
+                						response.render('titleandmessage', {
                 							"title": "Email confirmed",
                 							"message": message
-                						};
+                						});
                 					}
-                				})
+                				});
+                				break;
                 			default:
                 				response.render('error', {"message": "There was an error confirming your email"});
                 		}
@@ -114,11 +118,14 @@ router.route('/')
 			if (error) {
 				if(/duplicate key/.test(error.message)) {
 					//email already exists
+					sendConfirmationEmail(user, request.app);
 					response.status(400).send('Email already exists in database');
 				} else {
 					throw error;
 				}
 			} else {
+				console.log("about to send confirmation email");
+				sendConfirmationEmail(user, request.app);
 				response.status(201).json(
 					{
 						"_id": user._id,
@@ -280,7 +287,40 @@ router.route('/authenticate')
 		});
 	});
 
-function sendConfirmationEmail(user) {
+function sendConfirmationEmail(user, app) {
+	if (!String.prototype.entityify) {
+		//need to move all this if it works
+	    String.prototype.entityify = function () {
+	        return this.replace(/&/g, "&amp;").replace(/</g,
+	            "&lt;").replace(/>/g, "&gt;");
+	    };
+	}
+	console.log("getting domain..");
+	var domain = process.env.DOMAIN;
+	var httpScheme = "http://";
+	console.log(domain);
+	var token = user.generateToken();
+	var link = httpScheme + domain + '/users/confirmemail/' + token;
+	var message = "<a href='"+link+"' alt='Confirmation link'>Click here</a> to confirm your email address.";
+	var imgUrl = domain+'/logo.png';
+	var unsubscribeUrl = httpScheme + domain + '/users/unsubscribe/' + token;
+
+	var options = {
+		"title"				: "Confirm Your Email Address",
+		"message"			: message,
+		"img-url"			: imgUrl,
+		"unsubscribe-url"	: unsubscribeUrl,
+		"layout"			: false
+	};
+
+	//var template = exphbs.compile('email-transactional');
+	//var em = template(options);
+	//console.log(em);
+	console.log("options:" +options['unsubscribe-url']);
+	app.render('email-transactional', options, function (error, html){
+		if (error) throw error;
+		console.log(html);
+	});
 	
 }
 

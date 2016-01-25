@@ -19,10 +19,11 @@ mongoose.connect(databaseUri);
 app.engine('handlebars', exphbs({defaultLayout: 'main'}));
 app.set('view engine', 'handlebars');
 
+
+
 app.use(morgan('dev'));
 
 app.use(express.static('public'));
-
 
 app.use('/users', users);
 app.use('/db', db);
