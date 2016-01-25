@@ -4,4 +4,8 @@ data
 private-config.js
 .env
 .remoteDb
-config.jsemail.html
+config.js
+email.html
+public/logo_1024.png
+public/logo_264.png
+public/logo_64.png

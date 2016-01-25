@@ -152,8 +152,13 @@ router.route('/')
 			if (error) {
 				if(/duplicate key/.test(error.message)) {
 					//email already exists
-					sendConfirmationEmail(user, request.app);
-					response.status(400).send('Email already exists in database');
+					User.findOne({email: email}, function (error, user) {
+						if (error) {
+							throw error;
+						}
+						sendConfirmationEmail(user, request.app);
+						response.status(400).send('Your email is already registered. Check your inbox to confirm your address.');
+					});
 				} else {
 					throw error;
 				}
@@ -206,7 +211,7 @@ router.route('/:id')
 		if (!request.decoded.admin || (request.decoded._id != id)) {
 			return response.status(403).json({message: 'Administrator access or deleting user required'});
 		} else {
-			User.findOne(id, function(error, user){
+			User.findOneById(id, function(error, user){
 				if (error) {
 					response.status(400).send('Error finding user');
 				} else {
@@ -331,12 +336,12 @@ function sendConfirmationEmail(user, app) {
 	}
 	console.log("getting domain..");
 	var domain = process.env.DOMAIN;
-	var httpScheme = "http://";
+	var httpScheme = process.env.HTTP_SCHEME || "http://";
 	console.log(domain);
 	var token = user.generateToken();
 	var link = httpScheme + domain + '/users/confirmemail/' + token;
 	var message = "<a href='"+link+"' alt='Confirmation link'>Click here</a> to confirm your email address.";
-	var imgUrl = domain+'/logo.png';
+	var imgUrl = httpScheme + domain +'/logo_1024.png';
 	var unsubscribeUrl = httpScheme + domain + '/users/unsubscribe/' + token;
 
 	var options = {
