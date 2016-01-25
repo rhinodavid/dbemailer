@@ -17,7 +17,6 @@ var request_mod		= require('request');
 
 router.route('/webhook')
 	.get(function (request, response){
-		console.log(request.query.challenge);
 		if (request.query.challenge) {
 			// The initial Dropbox confirmation call. Echo the parameter
 			response.send(request.query.challenge);

@@ -20,8 +20,12 @@ app.engine('handlebars', exphbs({defaultLayout: 'main'}));
 app.set('view engine', 'handlebars');
 
 
+if (process.env.NODE_ENV == "development") {
+   app.use(morgan('dev')); 
+} else {
+    app.use(morgan('common'));
+}
 
-app.use(morgan('dev'));
 
 app.use(express.static('public'));
 
