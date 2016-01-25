@@ -23,7 +23,7 @@ router.route('/webhook')
 		}
 	})
 	.post(jsonencode, function (request, response){
-		console.log(body);
+		console.log(request.body);
 		response.sendStatus(200);
 	});
 
