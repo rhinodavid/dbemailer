@@ -11,7 +11,11 @@ $(function(){
 		var content, user;
 		for(var i in users) {
 			user = users[i];
-			content = '<span><b>' + user.name + '</b></span>&nbsp;&nbsp;&nbsp;&nbsp;';
+			content = '<span><b>' + user.name;
+			if (user.admin) {
+				content += " (administrator)";
+			}
+			content +='</b></span>&nbsp;&nbsp;&nbsp;&nbsp;';
 			content += '<span><small>' + user.email + '</small></span>&nbsp;&nbsp;&nbsp;&nbsp;';
 			content += '<a href="#" id="status-change-link" data-userid="' + user._id + '"><span><small>' + user.status + '</small></span></a>&nbsp;&nbsp;&nbsp;&nbsp;';
 			content += '<a href="#" id="delete-button" data-userid="' + user._id + '"><img src="/delete.png" width="15px"></img></a>';
@@ -71,7 +75,6 @@ $(function(){
 	}).success(function(response){
 		// Display the dropbox info
 		var data = jQuery.parseJSON(response);
-		console.log(data);
 		var name = data.name.display_name;
 		var email = data.email;
 		$('#dropbox-info').html("<h5>"+name+"</h5><span class='small muted'>"+email+"</span>");
