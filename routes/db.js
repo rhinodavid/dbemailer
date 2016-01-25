@@ -67,13 +67,16 @@ router.route('/addoauth')
 
 			// we have a valid code, now make a request the the dropbox API
 			// to get a token
+			var httpScheme = process.env.HTTP_SCHEME || "https://";
+			var domain = process.env.DOMAIN;
+			var redirect_uri = httpScheme + domain + "/db/addoauth";
 
 			var post_data = {
 				code: code,
 				grant_type: 'authorization_code',
 				client_id: process.env.DB_APP_KEY,
 				client_secret: process.env.DB_APP_SECRET,
-				redirect_uri: 'http://localhost:3000/db/addoauth'
+				redirect_uri: redirect_uri;
 			};
 
 			request_mod.post({url: 'https://api.dropboxapi.com/1/oauth2/token', form: post_data, json: true},
