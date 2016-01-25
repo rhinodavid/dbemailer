@@ -36,7 +36,7 @@ app.get('/', function (request, response, next) {
 
 app.get('/admin', authenticate, function (request, response, next){
     console.log('trying to render admin');
-    response.render('admin', { "db-app-key": process.env.DB_APP_KEY });
+    response.render('admin');
 });
 
 app.get('/login', function (request, response, next) {

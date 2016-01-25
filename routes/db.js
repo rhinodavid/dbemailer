@@ -76,7 +76,7 @@ router.route('/addoauth')
 				grant_type: 'authorization_code',
 				client_id: process.env.DB_APP_KEY,
 				client_secret: process.env.DB_APP_SECRET,
-				redirect_uri: redirect_uri;
+				redirect_uri: redirect_uri
 			};
 
 			request_mod.post({url: 'https://api.dropboxapi.com/1/oauth2/token', form: post_data, json: true},
