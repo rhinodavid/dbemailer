@@ -15,6 +15,18 @@ var authenticate	= require('./authentication');
 var url 			= require('url');
 var request_mod		= require('request');
 
+router.route('/webhook')
+	.get(function (request, response){
+		if (reqest.params.challenge) {
+			// The initial Dropbox confirmation call. Echo the parameter
+			response.send(request.params.challenge);
+		}
+	})
+	.post(jsonencode, function (request, response){
+		console.log(body);
+		response.sendStatus(200);
+	});
+
 router.route('/dbauthurl')
 	// This route returns the link to the Dropbox authorization URL
 	// where the administrator will approve Dropbox access
