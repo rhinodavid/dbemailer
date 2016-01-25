@@ -97,6 +97,40 @@ router.route('/confirmemail/:token')
     }
 });
 
+router.route('/unsubscribe/:token')
+.get(function(request, response) {
+    var token = request.params.token;
+    if(!token) {
+        response.render('emailerror');
+    } else {
+        jwt.verify(token, process.env.SECRET, function (error, decoded){
+            if (error) {
+                if (error.name == 'TokenExpiredError') {
+                    response.render('emailerror',
+                        { "message": "Your unsubscribe link has expired. Please click on a link in a newer email."
+                    });
+                } else {
+                    response.render('emailerror');
+                }
+            } else {
+                //there is no error, find the decoded id's user and confirm them
+                var id = decoded._id;
+                User.findByIdAndRemove(id, function (error, user){
+                	console.log("UNSUBCRIBE USER: Found user: " + user.name);
+                	if (error) {
+                		response.render('emailerror', {"message": "Could not find user."});
+                	} else {
+                		response.render('titleandmessage', {
+                			"title": "Unsubcribed",
+                			"message": "You have been unsubscribed. You'll no longer recieve emails."
+                		});
+                	}
+                });
+            }
+        });
+    }
+});
+
 
 router.route('/')
 	.post(urlencode, function(request, response){
