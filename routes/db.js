@@ -16,6 +16,7 @@ var url 			= require('url');
 var request_mod		= require('request');
 
 function mailUpdatedFiles(uid, cb) {
+	console.log("Mailing updated files for uid: " + uid);
 	Dropbox.findOne({uid: uid}, function (error, db){
 		if (error) {
 			cb(error);
@@ -28,21 +29,23 @@ function mailUpdatedFiles(uid, cb) {
 		var hasMore = true;
 		var entries = [];
 		if (!db.cursor) {
+			var post_data = {
+				"path": "",
+				"recursive": true,
+				"include_media_info": false,
+				"include_deleted": false
+			};
 			var options = {
 				url: "https://api.dropboxapi.com/2/files/list_folder",
 				method: 'POST',
 				headers: {
 					Authorization: "Bearer " + db.access_token,
 					"Content-Type": "application/json"
-				}
+				},
+				json: true,
+				body: post_data
 			};
-			var post_data = {
-				path: "",
-				recursive: true,
-				include_media_info: false,
-				include_deleted: false
-			};
-			request_mod.post(options, post_data, function (error, httpResponse, body){
+			request_mod.post(options, function (error, httpResponse, body){
 				if (error) {
 					cb(error);
 					return;
@@ -62,12 +65,13 @@ function mailUpdatedFiles(uid, cb) {
 				headers: {
 					Authorization: "Bearer " + db.access_token,
 					"Content-Type": "application/json"
+				},
+				json: true,
+				body: {
+					"cursor": cursor
 				}
 			};
-			var post_data = {
-				cursor: cursor
-			};
-			request_mod.post(options, post_data, function (error, httpResponse, body){
+			request_mod.post(options, function (error, httpResponse, body){
 				if (error) {
 					cb(error);
 					return;
