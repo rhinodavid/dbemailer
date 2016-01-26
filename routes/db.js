@@ -26,6 +26,7 @@ function mailUpdatedFiles(uid, cb) {
 		// If there is no saved cursor call Dropbox list_folder,
 		// otherwise use the cursor and call list_folder/continue.
 		var cursor = db.cursor;
+		console.log("Cursor is: " + cursor);
 		var hasMore = true;
 		var entries = [];
 		if (!db.cursor) {
@@ -45,11 +46,13 @@ function mailUpdatedFiles(uid, cb) {
 				json: true,
 				body: post_data
 			};
+			console.log("Making inital request for list_folder");
 			request_mod.post(options, function (error, httpResponse, body){
 				if (error) {
 					cb(error);
 					return;
 				}
+				console.log("list_folder returned:\n" + body);
 				cursor = body.cursor;
 				hasMore = body.has_more;
 				entries = entries.concat(body.entries);
