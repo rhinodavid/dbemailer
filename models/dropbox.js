@@ -7,7 +7,8 @@ var dropboxSchema = new Schema({
 	token_type: String, //always 'bearer'
 	uid: String,
 	created_at: { type: Date, default: Date.now },
-	updated_at: { type: Date }
+	updated_at: { type: Date },
+	cursor: { type: String, default: null }
 });
 
 dropboxSchema.pre('save', function(next){
