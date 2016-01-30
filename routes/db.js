@@ -15,8 +15,11 @@ var authenticate	= require('./authentication');
 var url 			= require('url');
 var request_mod		= require('request');
 
-function mailUpdatedFiles(uid, cb) {
-	console.log("Mailing updated files for uid: " + uid);
+
+
+function getUpdatedFiles(uid,cb) {
+	//takes a database UID and returns the updated files to the callback function
+	console.log("Getting updated files for uid: " + uid);
 	Dropbox.findOne({uid: uid}, function (error, db){
 		if (error) {
 			cb(error);
@@ -25,82 +28,90 @@ function mailUpdatedFiles(uid, cb) {
 
 		// If there is no saved cursor call Dropbox list_folder,
 		// otherwise use the cursor and call list_folder/continue.
-		var cursor = db.cursor;
-		console.log("Cursor is: " + cursor);
-		var hasMore = true;
-		var entries = [];
-		if (!db.cursor) {
-			var post_data = {
-				"path": "",
-				"recursive": true,
-				"include_media_info": false,
-				"include_deleted": false
-			};
-			var options = {
-				url: "https://api.dropboxapi.com/2/files/list_folder",
-				method: 'POST',
-				headers: {
-					Authorization: "Bearer " + db.access_token,
-					"Content-Type": "application/json"
-				},
-				json: true,
-				body: post_data
-			};
-			console.log("Making inital request for list_folder");
-			request_mod.post(options, function (error, httpResponse, body){
-				if (error) {
-					cb(error);
-					return;
-				}
-				console.log("list_folder returned:\n" + body);
-				cursor = body.cursor;
-				hasMore = body.has_more;
-				entries = entries.concat(body.entries);
-			});
-		}
-		// If we had a cursor we would skip the previous if statment and come here
-		// If we didn't and the previous statment ran AND came back with has_more,
-		// we would also run this.
-		while (hasMore) {
-			var options = {
-				url: "https://api.dropboxapi.com/2/files/list_folder/continue",
-				method: 'POST',
-				headers: {
-					Authorization: "Bearer " + db.access_token,
-					"Content-Type": "application/json"
-				},
-				json: true,
-				body: {
-					"cursor": cursor
-				}
-			};
-			request_mod.post(options, function (error, httpResponse, body){
-				if (error) {
-					cb(error);
-					return;
-				}
-				cursor = body.cursor;
-				hasMore = body.has_more;
-				entries = entries.concat(body.entries);
-			});
-		}
 
-		// We have been through continue until no more has_mores exist.
-		// entries now contains an array of all the new files (and folders)
-		// since our cursor before this all started.
-		// Cursor contains the last cursor, which we need to save
+		var getUpdatedFilesFromDropbox = function(cursor, updatedFiles){
+			// Check for updated files using either list_folder or list_folder/continue call.
+			if (!cursor) {
+				var post_data = {
+					"path": "",
+					"recursive": true,
+					"include_media_info": false,
+					"include_deleted": false
+				};
+				var options = {
+					url: "https://api.dropboxapi.com/2/files/list_folder",
+					method: 'POST',
+					headers: {
+						Authorization: "Bearer " + db.access_token,
+						"Content-Type": "application/json"
+					},
+					json: true,
+					body: post_data
+				};
+				request_mod.post(options, function (error, httpResponse, body){
+					if (error) {
+						console.log("list_folder error: " + error);
+						cb(error);
+						return;
+					}
+					
+					cursor = body.cursor;
+					hasMore = body.has_more;
+					updatedFiles = updatedFiles.concat(body.entries);
 
-		db.cursor = cursor;
-		db.save(function (error) {
-			if (error) {
-				cb(error);
-				return;
+					if (!hasMore) {
+						db.cursor = cursor;
+						db.save(function(error){
+							if (error) cb(error);
+							return;
+						});
+						cb(null, updatedFiles);
+					} else {
+						console.log("hasMore was true.. recursively calling getUpdatedFilesFromDropbox");
+						getUpdatedFileFromDropbox(cursor, updatedFiles);
+					}
+				});
+			} else {
+				// a cursor already existed in the database
+				var options = {
+					url: "https://api.dropboxapi.com/2/files/list_folder/continue",
+					method: 'POST',
+					headers: {
+						Authorization: "Bearer " + db.access_token,
+						"Content-Type": "application/json"
+					},
+					json: true,
+					body: {
+						"cursor": cursor
+					}
+				};
+				request_mod.post(options, function (error, httpResponse, body){
+					if (error) {
+						cb(error);
+						return;
+					}
+					cursor = body.cursor;
+					hasMore = body.has_more;
+					updatedFiles = updatedFiles.concat(body.entries);
+
+					if (!hasMore) {
+						db.cursor = cursor;
+						db.save(function(error){
+							if (error) cb(error);
+							return;
+						});
+						cb(null, updatedFiles);
+					} else {
+						console.log("hasMore was true.. recursively calling getUpdatedFilesFromDropbox");
+						getUpdatedFileFromDropbox(cursor, updatedFiles);
+					}
+				});
 			}
-		});
-
-		console.log(entries); // Just looking at our new entires.
+		};
+		getUpdatedFilesFromDropbox(db.cursor, []);
 	});
 }
+
 
 router.route('/webhook')
 	.get(function (request, response){
@@ -116,8 +127,9 @@ router.route('/webhook')
 		data.delta.users.forEach(function (uid){
 			// Call the email - file function for each
 			// Dropbox account there is an update on
-			mailUpdatedFiles(uid, function(error){
+			getUpdatedFiles(uid, function(error, files){
 				if (error) throw error;
+				console.log(files);
 			});
 		});
 	});
