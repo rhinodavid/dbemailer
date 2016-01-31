@@ -14,11 +14,114 @@ var mongoose 		= require('mongoose');
 var authenticate	= require('./authentication');
 var url 			= require('url');
 var request_mod		= require('request');
+var fs 				= require('fs');
 
+function downloadFiles(options, cb) {
+	// takes a file list downloads the files to a tmp directory
+	// Callback is cb(error) format
 
+	// 									********
+	// options:
+	//		fileList: 		REQUIRED [Array] of files/folders, presumably returned from
+	//							getUpdatedFiles
+	//		access_token: 	REQUIRED [String] Dropbox access token for these files
+	//		filter: 		OPTIONAL [Array] of strings representing file extensions to
+	//							download. For instance, pass ["pdf", "docx", "doc"] to
+	//							only download PDF and Word documents
+	// 									********
+
+	var hasTimedOut = false;
+	var timer = setTimeout(function() {
+		// SEE: https://jsfiddle.net/LdaFw/1/
+	    // do something to handle the timeout case here
+	    // for exampe, pass a default value to your callback
+	    cb("Downloads timed out");
+
+	    // also, let the program remember that
+	    // it has timed out, so the exec-function 
+	    // wont be able to invoke the callback a second time
+	    hasTimedOut = true;
+	 }, 30*1000);
+
+	if ((options.fileList == undefined) || (options.access_token == undefined)) {
+		cb("Must provide fileList and access_token in options");
+		return;
+	}
+
+	var access_token = options.access_token, fileList = options.fileList;
+	var filter = [];
+	
+	// make sure filter is an array of all lowercase file extensions
+	if (options.filter) {
+		if (typeof options.filter == "String") {
+			// Instead of getting an array the function was only passed one string
+			filter[0] = options.filter;
+		}
+		filter.push(options.filter.shift().toLowerCase());
+	}
+	var dir = "./dls";
+	var error = null;
+	var numOfItems = fileList.length;
+	var itemsDownloadedOrSkipped = 0;
+	fileList.forEach(function (file){
+		console.log("Attempting to download file: ", file.name);
+		if (file['.tag'] != "file") {
+			// only looking for files, other options are "folder" and "deleted"
+			itemsDownloadedOrSkipped++;
+			if ((itemsDownloadedOrSkipped == numOfItems) && (!hasTimedOut)) {
+				clearTimeout(timer);
+				cb(error);
+			}
+			return;
+		}
+		var fileExtension = function(fileName) {
+			var parts = fileName.split(".");
+			if (parts.length == 1) return null;
+			return parts[parts.length - 1].toLowerCase();
+		};
+		var extension = fileExtension(file.name);
+		if ((filter.indexOf(extension) == -1) && (filter.length > 0)) {
+			// if there is a filter array and the file extension
+			// is not found in the filter just return
+			itemsDownloadedOrSkipped++;
+			if ((itemsDownloadedOrSkipped == numOfItems) && (!hasTimedOut)) {
+				clearTimeout(timer);
+				cb(error);
+			}
+			return;
+		}
+		var newDownload = fs.createWriteStream(dir + "/" + file.name);
+		var options = {
+					url: "https://content.dropboxapi.com/2/files/download",
+					method: 'POST',
+					headers: 
+   						{ 
+     						'Dropbox-API-Arg': '{"path":"'+file.id+'"}',
+    					 	Authorization: 'Bearer ' + access_token
+    					}
+
+		};
+		
+		request_mod.post(options)
+			.on('error', function (e){
+				error = e;
+				return;
+			})
+			.pipe(newDownload).on('finish', function(){
+				itemsDownloadedOrSkipped++;
+				if ((itemsDownloadedOrSkipped == numOfItems) && (!hasTimedOut)) {
+					clearTimeout(timer);
+					cb(error);
+				}
+			});
+
+	});
+}
 
 function getUpdatedFiles(uid,cb) {
-	//takes a database UID and returns the updated files to the callback function
+	// Takes a database UID and returns the updated files to the callback function
+	// Also returns the access_token used to access the files for follow-on functions
+	// Callback format is cb(error, files, access_token)
 	console.log("Getting updated files for uid: " + uid);
 	Dropbox.findOne({uid: uid}, function (error, db){
 		if (error) {
@@ -65,10 +168,10 @@ function getUpdatedFiles(uid,cb) {
 							if (error) cb(error);
 							return;
 						});
-						cb(null, updatedFiles);
+						cb(null, updatedFiles, db.access_token);
 					} else {
 						console.log("hasMore was true.. recursively calling getUpdatedFilesFromDropbox");
-						getUpdatedFileFromDropbox(cursor, updatedFiles);
+						getUpdatedFileFromDropbox(cursor, updatedFiles, db.access_token);
 					}
 				});
 			} else {
@@ -100,7 +203,7 @@ function getUpdatedFiles(uid,cb) {
 							if (error) cb(error);
 							return;
 						});
-						cb(null, updatedFiles);
+						cb(null, updatedFiles, db.access_token);
 					} else {
 						console.log("hasMore was true.. recursively calling getUpdatedFilesFromDropbox");
 						getUpdatedFileFromDropbox(cursor, updatedFiles);
@@ -121,15 +224,16 @@ router.route('/webhook')
 		}
 	})
 	.post(jsonencode, function (request, response){
-		console.log(request.body);
 		var data = request.body;
 		response.sendStatus(200);
 		data.delta.users.forEach(function (uid){
 			// Call the email - file function for each
 			// Dropbox account there is an update on
-			getUpdatedFiles(uid, function(error, files){
+			getUpdatedFiles(uid, function(error, files, access_token){
 				if (error) throw error;
-				console.log(files);
+				downloadFiles({fileList: files, access_token: access_token, filter: ["pdf"]}, function(error){
+					console.log("Downloaded the files. Error: ", error);
+				});
 			});
 		});
 	});
