@@ -32,7 +32,8 @@ $(function(){
 			.success(function(user){
 				console.log(user);
 				if (user.status === "pending-user") {
-					$('.alert').html('Please see your email to confirm your address.').addClass('bg-info');
+					var alertText = 'Please see your email to confirm your address. ' + user.message;
+					$('.alert').html(alertText).addClass('bg-info');
 					$('.alert').show();
 				}
 				form.trigger('reset');

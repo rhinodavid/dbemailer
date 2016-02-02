@@ -13,6 +13,12 @@ var authenticate	= require('./authentication');
 var exphbs          = require('express-handlebars');
 var emailSender		= require('./../email');
 
+
+router.route('/testpassword')
+ .get(function(req,res){
+ 	res.json(generatePassword());
+ });
+
 router.route('/testsend')
 	.get(function (request, response) {
 		var files = [__dirname+"/db.js", __dirname+"/authentication.js"];
@@ -23,23 +29,7 @@ router.route('/testsend')
 			});
 		});
 	});
-router.route('/testuser')	
-	.get(function (request, response) {
-		//***** ONLY FOR TESTING ********
-		var tester = new User({
-			name: 'David',
-			email: 'david@mailinator.com',
-			password: 'password',
-			status: 'confirmed',
-			admin: true
-		});
-		tester.save(function (error) {
-			if (error) throw error;
-			console.log('User saved successfully');
-			response.json({success: true});
-		});
-		
-	});
+
 
 router.route('/confirmemail/:token')
 .get(function(request, response) {
@@ -157,42 +147,64 @@ router.route('/')
 			return false;
 		}
 
-		var newUser = new User({
-			name: name,
-			email: email,
-			status: "pending-user"
-		});
+		User.count({}, function (error, count){
+			if (count == 0) {
+				// There are no users. Make the first user an administrator
 
-		newUser.save(function(error, user){
-			if (error) {
-				if(/duplicate key/.test(error.message)) {
-					//email already exists
-					User.findOne({email: email}, function (error, user) {
-						if (error) {
-							throw error;
-						}
-						emailSender.sendEmailConfirmation(user, function(error) {
-							if (error) throw error;
-						});
-						response.status(400).send('Your email is already registered. Check your inbox to confirm your address.');
-					});
-				} else {
-					throw error;
-				}
-			} else {
-				console.log("about to send confirmation email");
-				emailSender.sendEmailConfirmation(user, function(error){
-					if (error) throw error;
+				var newPassword = generatePassword();
+
+				var newUser = new User({
+					name: name,
+					email: email,
+					status: "pending-user",
+					admin: true,
+					password: newPassword
 				});
-				response.status(201).json(
-					{
-						"_id": user._id,
-						"name": user.name,
-						"email": user.email,
-						"status": user.status
-					}
-				);
+			} else {
+				// Respond normally
+				var newUser = new User({
+					name: name,
+					email: email,
+					status: "pending-user"
+				});
 			}
+
+			newUser.save(function(error, user){
+				if (error) {
+					if(/duplicate key/.test(error.message)) {
+						//email already exists
+						User.findOne({email: email}, function (error, user) {
+							if (error) {
+								throw error;
+							}
+							emailSender.sendEmailConfirmation(user, function(error) {
+								if (error) throw error;
+							});
+							response.status(400).send('Your email is already registered. Check your inbox to confirm your address.');
+						});
+					} else {
+						throw error;
+					}
+				} else {
+					emailSender.sendEmailConfirmation(user, function(error){
+						if (error) throw error;
+					});
+					var message = "";
+					if (newPassword) {
+						message = "Your password is " + newPassword + ".";
+					}
+					response.status(201).json(
+						{
+							"_id": user._id,
+							"name": user.name,
+							"email": user.email,
+							"status": user.status,
+							"message": message
+						}
+					);
+				}
+			});
+			
 		});
 	})
 	.get(authenticate, function(request, response){
@@ -344,5 +356,18 @@ router.route('/authenticate')
 
 		});
 	});
+
+function generatePassword() {
+	var letters = 'abcdefghijklmnopqrstuvwxyz';
+	var password = '';
+	for (var i = 0; i < 14; i++) {
+		if (!((i+1)%5)) {
+			password = password + '-';
+		} else {
+			password = password + letters[Math.floor(Math.random() * 26)];
+		}
+	}
+	return password;
+}
 
 module.exports = router;
