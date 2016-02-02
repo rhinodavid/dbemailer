@@ -18,6 +18,8 @@ var fs 				= require('fs');
 
 function downloadFiles(options, cb) {
 	// takes a file list downloads the files to a tmp directory
+	// If all files have not downloaded in 30 seconds function throws an error
+	// Callback is only called once all files have downloaded.
 	// Callback is cb(error) format
 
 	// 									********

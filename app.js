@@ -1,3 +1,8 @@
+// use .env for enviornment variables in development
+// set them via heroku for production
+var nodeEnvFile                 = require('node-env-file');
+nodeEnvFile(__dirname + '/.env', {raise: false});
+
 var express                     = require("express");
 var app                         = express();
 var morgan                      = require('morgan');
@@ -6,17 +11,16 @@ var authenticate                = require('./routes/authentication');
 var db                          = require('./routes/db');
 var mongoose                    = require('mongoose');
 var exphbs                      = require('express-handlebars');
-var nodeEnvFile                 = require('node-env-file');
 var port = process.env.PORT || 3000; //used to create, sign and verify tokens
 
-// use .env for enviornment variables in development
-// set them via heroku for production
-nodeEnvFile(__dirname + '/.env', {raise: false});
 
 var databaseUri = process.env.MONGOLAB_URI || process.env.DATABASE;
 mongoose.connect(databaseUri);
 
-app.engine('handlebars', exphbs({defaultLayout: 'main'}));
+app.engine('handlebars', exphbs({
+                                defaultLayout: 'main',
+                                layoutsDir: __dirname + '/views/layouts'
+                                }));
 app.set('view engine', 'handlebars');
 
 
@@ -34,12 +38,10 @@ app.use('/db', db);
 
 
 app.get('/', function (request, response, next) {
-    console.log('getting home');
     response.render('home');
 });
 
 app.get('/admin', authenticate, function (request, response, next){
-    console.log('trying to render admin');
     response.render('admin');
 });
 

@@ -1,11 +1,9 @@
 var express 		= require('express');
-//var app 			= require('./../app');
 var bodyParser 		= require('body-parser');
 var urlencode 		= bodyParser.urlencoded({extended: false});
 var jsonencode 		= bodyParser.json();
 var assert 			= require('assert');
 var mongo 			= require('mongodb');
-var config 			= require('./../config');
 var jwt 			= require('jsonwebtoken');
 var User 			= require('./../models/user');
 var validator 		= require('validator');
@@ -13,14 +11,24 @@ var router 			= express.Router();
 var mongoose 		= require('mongoose');
 var authenticate	= require('./authentication');
 var exphbs          = require('express-handlebars');
+var emailSender		= require('./../email');
 
-
+router.route('/testsend')
+	.get(function (request, response) {
+		var files = [__dirname+"/db.js", __dirname+"/authentication.js"];
+		User.find({status: "confirmed"}, function(error, users){
+			emailSender.sendFiles(users, files, function(e){
+				console.log("File send callback with error: ", e);
+				response.send("File send callback with error:", e);
+			});
+		});
+	});
 router.route('/testuser')	
 	.get(function (request, response) {
 		//***** ONLY FOR TESTING ********
 		var tester = new User({
 			name: 'David',
-			email: 'davidtest@gmail.com',
+			email: 'david@mailinator.com',
 			password: 'password',
 			status: 'confirmed',
 			admin: true
@@ -37,16 +45,17 @@ router.route('/confirmemail/:token')
 .get(function(request, response) {
     var token = request.params.token;
     if(!token) {
-        response.render('emailerror');
+        response.render('emailerror', {"message": "No token was provided", "layout": "main"});
     } else {
         jwt.verify(token, process.env.SECRET, function (error, decoded){
             if (error) {
                 if (error.name == 'TokenExpiredError') {
                     response.render('emailerror',
-                        { "message": "Your confirmation link has expired. Please sign up again."
+                        { "message": "Your confirmation link has expired. Please sign up again.",
+                          "layout" : "main"
                     });
                 } else {
-                    response.render('emailerror');
+                    response.render('emailerror', {"layout": "main"});
                 }
             } else {
                 //there is no error, find the decoded id's user and confirm them
@@ -54,17 +63,19 @@ router.route('/confirmemail/:token')
                 User.findById(id, function (error, user){
                 	console.log("CONFIRM USER: Found user: " + user.name);
                 	if (error) {
-                		response.render('emailerror', {"message": "Could not find user."});
+                		response.render('emailerror', {"message": "Could not find user.", "layout": "main"});
                 	} else {
                 		switch (user.status) {
                 			case "confirmed":
                 				response.render('titleandmessage', {
+                					"layout": "main",
                 					"title": "You're already confirmed.",
                 					"message": "Your email address has already been confirmed. You should already be receiving emails."
                 				});
                 				break;
                 			case "pending-admin":
                 				response.render('titleandmessage', {
+                					layout: "main",
                 					"title": "Pending administrator confirmation",
                 					"message": "You've already confirmed your email address. Once an administrator confirms you you'll begin receiving emails."
                 				});
@@ -75,11 +86,13 @@ router.route('/confirmemail/:token')
                 				user.save(function (error, user) {
                 					if (error) {
                 						response.render('error', {
+                							"layout": "main",
                 							"error": "There was an error confirming your email."
                 						});
                 					} else {
                 						var message = "Congratulations " + user.name + ", your email has been confirmed. Once an administrator also confirms it, you'll begin receiving emails.";
                 						response.render('titleandmessage', {
+                							"layout": "main",
                 							"title": "Email confirmed",
                 							"message": message
                 						});
@@ -87,7 +100,7 @@ router.route('/confirmemail/:token')
                 				});
                 				break;
                 			default:
-                				response.render('error', {"message": "There was an error confirming your email"});
+                				response.render('error', {"message": "There was an error confirming your email", "layout": "main"});
                 		}
                 		
                 	}
@@ -107,10 +120,11 @@ router.route('/unsubscribe/:token')
             if (error) {
                 if (error.name == 'TokenExpiredError') {
                     response.render('emailerror',
-                        { "message": "Your unsubscribe link has expired. Please click on a link in a newer email."
+                        { "message": "Your unsubscribe link has expired. Please click on a link in a newer email.",
+                           "layout": "main"
                     });
                 } else {
-                    response.render('emailerror');
+                    response.render('emailerror', {"layout": "main"});
                 }
             } else {
                 //there is no error, find the decoded id's user and confirm them
@@ -118,9 +132,10 @@ router.route('/unsubscribe/:token')
                 User.findByIdAndRemove(id, function (error, user){
                 	console.log("UNSUBCRIBE USER: Found user: " + user.name);
                 	if (error) {
-                		response.render('emailerror', {"message": "Could not find user."});
+                		response.render('emailerror', {"message": "Could not find user.", "layout": "main"});
                 	} else {
                 		response.render('titleandmessage', {
+                			"layout": "main",
                 			"title": "Unsubcribed",
                 			"message": "You have been unsubscribed. You'll no longer recieve emails."
                 		});
@@ -156,7 +171,9 @@ router.route('/')
 						if (error) {
 							throw error;
 						}
-						sendConfirmationEmail(user, request.app);
+						emailSender.sendEmailConfirmation(user, function(error) {
+							if (error) throw error;
+						});
 						response.status(400).send('Your email is already registered. Check your inbox to confirm your address.');
 					});
 				} else {
@@ -164,7 +181,9 @@ router.route('/')
 				}
 			} else {
 				console.log("about to send confirmation email");
-				sendConfirmationEmail(user, request.app);
+				emailSender.sendEmailConfirmation(user, function(error){
+					if (error) throw error;
+				});
 				response.status(201).json(
 					{
 						"_id": user._id,
@@ -325,42 +344,5 @@ router.route('/authenticate')
 
 		});
 	});
-
-function sendConfirmationEmail(user, app) {
-	if (!String.prototype.entityify) {
-		//need to move all this if it works
-	    String.prototype.entityify = function () {
-	        return this.replace(/&/g, "&amp;").replace(/</g,
-	            "&lt;").replace(/>/g, "&gt;");
-	    };
-	}
-	console.log("getting domain..");
-	var domain = process.env.DOMAIN;
-	var httpScheme = process.env.HTTP_SCHEME || "https://";
-	console.log(domain);
-	var token = user.generateToken();
-	var link = httpScheme + domain + '/users/confirmemail/' + token;
-	var message = "<a href='"+link+"' alt='Confirmation link'>Click here</a> to confirm your email address.";
-	var imgUrl = httpScheme + domain +'/logo_1024.png';
-	var unsubscribeUrl = httpScheme + domain + '/users/unsubscribe/' + token;
-
-	var options = {
-		"title"				: "Confirm Your Email Address",
-		"message"			: message,
-		"img-url"			: imgUrl,
-		"unsubscribe-url"	: unsubscribeUrl,
-		"layout"			: false
-	};
-
-	//var template = exphbs.compile('email-transactional');
-	//var em = template(options);
-	//console.log(em);
-	console.log("options:" +options['unsubscribe-url']);
-	app.render('email-transactional', options, function (error, html){
-		if (error) throw error;
-		console.log(html);
-	});
-	
-}
 
 module.exports = router;
