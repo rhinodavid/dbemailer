@@ -13,12 +13,6 @@ var authenticate	= require('./authentication');
 var exphbs          = require('express-handlebars');
 var emailSender		= require('./../email');
 
-
-router.route('/testpassword')
- .get(function(req,res){
- 	res.json(generatePassword());
- });
-
 router.route('/testsend')
 	.get(function (request, response) {
 		var files = [__dirname+"/db.js", __dirname+"/authentication.js"];
@@ -259,8 +253,9 @@ router.route('/:id')
 		var requesterIsUser = false;
 
 		var status = request.body.status;
+		var password = request.body.password;
 
-		if (requesterId === id) {
+		if (requesterId == id) {
 			// The person making the request is the user
 			requesterIsUser = true;
 		}
@@ -269,50 +264,88 @@ router.route('/:id')
 		console.log("Requester ID: " + requesterId);
 		console.log("Requester is user: " + requesterIsUser);
 
+		if (status) {
+			// update status
+			// **make this into a function**
+			console.log("Updating status for user ", id);
+			if (!(requesterAdmin || requesterIsUser)) {
+				// You must be an admin or the user to modfiy anything
+				return response.status(403).json({success: false, message: 'Administrator access or modifying user required'});
+			}
 
-		if (!(requesterAdmin || requesterIsUser)) {
-			// You must be an admin or the user to modfiy anything
-			return response.status(403).json({success: false, message: 'Administrator access or modifying user required'});
-		}
+			if ((status == 'confirmed') && !request.decoded.admin) {
+				return response.status(403).json({success: false, message: 'Administrator is required to confirm user'});
+			}
 
-		if ((status == 'confirmed') && !request.decoded.admin) {
-			return response.status(403).json({success: false, message: 'Administrator is required to confirm user'});
-		}
-
-		if (status && !((status == 'confirmed') || (status == 'pending-user') || (status == 'pending-admin'))) {
-			//A status was provided but it was bad
-			response.status(400).send('Invalid status type');
-			return false;
-		} else if (!status) {
-			//No status was provided
-			response.status(400).send('No status update provided');
-			return false;
-		} else {
-			//A valid status was provided
-			console.log("Attempting to find user.." + id);
+			if (status && !((status == 'confirmed') || (status == 'pending-user') || (status == 'pending-admin'))) {
+				//A status was provided but it was bad
+				response.status(400).send('Invalid status type');
+				return false;
+			} else if (!status) {
+				//No status was provided
+				response.status(400).send('No status update provided');
+				return false;
+			} else {
+				//A valid status was provided
+				console.log("Attempting to find user.." + id);
+				User.findById(id, function (error, user){
+					if (error) {
+						console.log('some error..');
+						if(/not found/.test(error.message)) {
+							response.status(400).send('User not found');
+							return false;
+						} else {
+							// generic error
+							throw error;
+						}
+					} else {
+						console.log('no error');
+						console.log("found user: " + user.name);
+						user.status = status;
+						user.save(function(error, user) {
+							if (error) {
+								return response.status(400).json({"success": false, "message": "Error updating user"});
+							} else {
+								response.status(200).json({_id: user._id, status: user.status, email: user.email, name: user.name});
+							}
+						});
+					}
+				});
+			}
+		} else if (password) {
+			// update password
+			console.log('Updating password for user ', id);
+			// must be user updating their own password
+			if (!requesterIsUser) {
+				return response.status(403).json({success: false, message: 'User\'s password being updated is not the verified user.'});
+			}
+			if (password.length < 8) {
+				return response.status(400).json({success: false, message: 'Password is too short.'});
+			}
 			User.findById(id, function (error, user){
 				if (error) {
-					console.log('some error..');
-					if(/not found/.test(error.message)) {
-						response.status(400).send('User not found');
-						return false;
-					} else {
-						// generic error
-						throw error;
-					}
-				} else {
-					console.log('no error');
-					console.log("found user: " + user.name);
-					user.status = status;
-					user.save(function(error, user) {
-						if (error) {
-							return response.status(400).json({"success": false, "message": "Error updating user"});
+						console.log('Error finding user to update password.');
+						if(/not found/.test(error.message)) {
+							return response.status(400).json({success: false, message: 'User not found'});
+							
 						} else {
-							response.status(200).json({_id: user._id, status: user.status, email: user.email, name: user.name});
+							// generic error
+							return response.status(400).json({success: false, message: 'Error with user record.'})
 						}
-					});
-				}
+					} else {
+						console.log('no error');
+						console.log("found user: " + user.name);
+						user.password = password;
+						user.save(function(error, user) {
+							if (error) {
+								return response.status(400).json({success: false, message: "Error updating user password"});
+							} else {
+								response.status(200).json({_id: user._id, status: user.status, email: user.email, name: user.name});
+							}
+						});
+					}
 			});
+
 		}
 		//catch all if no updates were made
 	});

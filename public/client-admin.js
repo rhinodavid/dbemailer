@@ -1,7 +1,52 @@
 
 
 $(function(){
+
 	$('.alert').hide();
+
+	$('form').on('submit', function(event){
+		event.preventDefault();
+
+		var form = $(this);
+		var formData = form.serialize();
+
+		$('.alert').hide().removeClass('bg-danger').removeClass('bg-info');
+		
+		if (form.attr('name') === 'password-change') {
+			// ********** PASSWORD CHANGE *************
+
+			// Check to make sure password and confirmation match
+			//console.log(form.find('input[name="new-password"]').val());
+
+			if (form.find('input[name="new-password"]').val() != form.find('input[name="new-password-confirm"]').val()) {
+				$('.alert').show().addClass('bg-danger').html("Your passwords do not match");
+				form.trigger('reset');
+			} else {
+				// Send new password to endpoint
+				var token = getCookie('token');
+				var decoded = jwt_decode(token);
+				var id = decoded._id;
+				console.log(id);
+
+				$('.alert').hide().removeClass('bg-danger').removeClass('bg-info');
+				$.ajax({
+					type: 'PUT',
+					url: '/users/' + id,
+					data: {
+						"password": form.find('input[name="new-password"]').val()
+					}
+				}).success(function(response){
+					$('.alert').show().addClass('bg-success').html("Your password was updated");
+				})
+				.error(function(error){
+					var errorObj = JSON.parse(error.responseText);
+					$('.alert').show().addClass('bg-danger').html(errorObj.message);
+				});
+
+			}
+
+		}
+	});
 
 	//grab all the users
 	$.get('/users', appendUsers);
@@ -79,6 +124,15 @@ $(function(){
 		var email = data.email;
 		$('#dropbox-info').html("<h5>"+name+"</h5><span class='small muted'>"+email+"</span>");
 	});
-	
-
 });
+
+function getCookie(cname) {
+    var name = cname + "=";
+    var ca = document.cookie.split(';');
+    for(var i=0; i<ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0)==' ') c = c.substring(1);
+        if (c.indexOf(name) == 0) return c.substring(name.length,c.length);
+    }
+    return "";
+}

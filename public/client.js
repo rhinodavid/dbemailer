@@ -65,7 +65,6 @@ $(function(){
 				}
 			})
 			.error(function(error){
-				console.log(error);
 				var errorResponseText = JSON.parse(error.responseText);
 				$('.alert').html(errorResponseText.message).addClass('bg-danger');
 				$('.alert').show();
