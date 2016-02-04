@@ -15,6 +15,112 @@ var authenticate	= require('./authentication');
 var url 			= require('url');
 var request_mod		= require('request');
 var fs 				= require('fs');
+var emailSender		= require('./../email');
+var User 			= require('./../models/user');
+var Readable 		= require('stream').Readable;
+
+//////////////////////////////////////////////////////////////
+
+function getStreamsForFiles(options, cb) {
+	// takes a file list and returns an array of request streams to download the files
+	// If function has not been completed in 30 seconds throw an error
+	// Callback is only called once all files have been added
+	// Callback is cb(error, stream-array) format
+
+	// 									********
+	// options:
+	//		fileList: 		REQUIRED [Array] of files/folders, presumably returned from
+	//							getUpdatedFiles
+	//		access_token: 	REQUIRED [String] Dropbox access token for these files
+	//		filter: 		OPTIONAL [Array] of strings representing file extensions to
+	//							download. For instance, pass ["pdf", "docx", "doc"] to
+	//							only download PDF and Word documents
+	// 									********
+
+	var hasTimedOut = false;
+	var timer = setTimeout(function() {
+		// SEE: https://jsfiddle.net/LdaFw/1/
+	    // do something to handle the timeout case here
+	    // for exampe, pass a default value to your callback
+	    cb("Get streams timed out.");
+
+	    // also, let the program remember that
+	    // it has timed out, so the exec-function 
+	    // wont be able to invoke the callback a second time
+	    hasTimedOut = true;
+	 }, 30*1000);
+
+	if ((options.fileList == undefined) || (options.access_token == undefined)) {
+		cb("Must provide fileList and access_token in options");
+		return;
+	}
+
+	var access_token = options.access_token, fileList = options.fileList;
+	var filter = [];
+	
+	// make sure filter is an array of all lowercase file extensions
+	if (options.filter) {
+		if (typeof options.filter == "String") {
+			// Instead of getting an array the function was only passed one string
+			filter[0] = options.filter;
+		}
+		filter.push(options.filter.shift().toLowerCase());
+	}
+	var error = null;
+	var fileStreams = [];
+	var numOfItems = fileList.length;
+	var itemsDownloadedOrSkipped = 0;
+	fileList.forEach(function (file){
+		//console.log("Attempting to get stream for file: ", file.name);
+		if (file['.tag'] != "file") {
+			// only looking for files, other options are "folder" and "deleted"
+			itemsDownloadedOrSkipped++;
+			if ((itemsDownloadedOrSkipped == numOfItems) && (!hasTimedOut)) {
+				clearTimeout(timer);
+				cb(error);
+			}
+			return;
+		}
+		var fileExtension = function(fileName) {
+			var parts = fileName.split(".");
+			if (parts.length == 1) return null;
+			return parts[parts.length - 1].toLowerCase();
+		};
+		var extension = fileExtension(file.name);
+		if ((filter.indexOf(extension) == -1) && (filter.length > 0)) {
+			// if there is a filter array and the file extension
+			// is not found in the filter just return
+			itemsDownloadedOrSkipped++;
+			if ((itemsDownloadedOrSkipped == numOfItems) && (!hasTimedOut)) {
+				clearTimeout(timer);
+				cb(error);
+			}
+			return;
+		}
+		var options = {
+					url: "https://content.dropboxapi.com/2/files/download",
+					method: 'POST',
+					fileName: file.name,
+					headers: 
+   						{ 
+     						'Dropbox-API-Arg': '{"path":"'+file.path_lower+'"}',
+    					 	Authorization: 'Bearer ' + access_token
+    					}
+
+		};
+		
+		var stream = request_mod.post(options);
+		console.log("db.js stream is readable?: ", stream instanceof Readable)
+		fileStreams.push(stream);
+		itemsDownloadedOrSkipped++;
+		if ((itemsDownloadedOrSkipped == numOfItems) && (!hasTimedOut)) {
+			clearTimeout(timer);
+			cb(error, fileStreams);
+		}
+	});
+}
+
+//////////////////////////////////////////
 
 function downloadFiles(options, cb) {
 	// takes a file list downloads the files to a tmp directory
@@ -233,9 +339,24 @@ router.route('/webhook')
 			// Dropbox account there is an update on
 			getUpdatedFiles(uid, function(error, files, access_token){
 				if (error) throw error;
-				downloadFiles({fileList: files, access_token: access_token, filter: ["pdf"]}, function(error){
-					console.log("Downloaded the files. Error: ", error);
+				console.log(files);
+				getStreamsForFiles({fileList: files, access_token: access_token, filter: ["pdf"]}, function (error, streams){
+					if (error) {
+						throw error;
+						return;
+					}
+					//console.log("Got Streams for the files. Error: ", error);
+					//console.log("Streams: ", streams);
+					User.find({status: "confirmed"}, function (error, users) {
+						if (error) throw error;
+						emailSender.sendFiles(users, streams, function(error){
+							console.log("Sent files with error: ", error);
+						});
+					});
 				});
+				/*downloadFiles({fileList: files, access_token: access_token, filter: ["pdf"]}, function(error){
+					console.log("Downloaded the files. Error: ", error);
+				});*/
 			});
 		});
 	});

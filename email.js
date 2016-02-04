@@ -1,7 +1,36 @@
 var Mailgun = require('mailgun-js');
 var exphbs = require('express-handlebars');
 var hbs = exphbs.create();
+var Readable = require('stream').Readable;
+var http = require('http');
+///////////////////////////
+/*
+var apiKey = process.env.MAILGUN_API_KEY;
+var mailDomain = process.env.MAILGUN_EMAIL_DOMAIN;
+var mailgun = new Mailgun({apiKey: apiKey, domain: mailDomain});
+var request_mod		= require('request');
+var maybeStream = request_mod.post('https://httpbin.org/image');
+console.log(maybeStream);
 
+var data = {
+			from: 'mail@' + process.env.MAILGUN_EMAIL_DOMAIN,
+			to: "dawalsh+test@gmail.com",
+			subject: '[Schedule Mailer] TEST',
+			html: "<p>test 123</p>",
+			attachment: maybeStream
+		};
+
+		mailgun.messages().send(data, function (error, body) {
+			if (error) {
+				console.log("error");
+				return;
+			} else {
+				console.log("Sent confirmation email with files.");
+				console.log(body);
+			}
+		});
+*/
+////////////////////8888888888888888888888888888888////////////////////////
 var email = {};
 var apiKey = process.env.MAILGUN_API_KEY;
 var mailDomain = process.env.MAILGUN_EMAIL_DOMAIN;
@@ -12,8 +41,22 @@ email.sendFiles = function (users, files, cb) {
 	files: a filepath of stream (or array of either)
 	cb: of the cb(error) format
 	********************************************/
-	var mailgun = new Mailgun({apiKey: apiKey, domain: mailDomain});
 
+	var mailgun = new Mailgun({apiKey: apiKey, domain: mailDomain});
+	
+	var attch = [];
+	if (typeof files == "string") {
+		attch[0] = files;
+	} else {
+		files.forEach(function (file){
+			/*attch.push(new mailgun.Attachment({
+				data: file, // Not accepting this since file is not a buffer or instanceof Readable
+				filename: file.fileName
+			}));*/
+			file.filename = file.fileName;
+			attch.push(file);
+		});
+	}
 	var domain = process.env.DOMAIN;
 	var httpScheme = process.env.HTTP_SCHEME || "https://";
 	var message = "%recipient.name%, new flight schedules are attached.";
@@ -52,7 +95,7 @@ email.sendFiles = function (users, files, cb) {
 			to: emails,
 			subject: '[Schedule Mailer] ' + options.title,
 			html: html,
-			attachment: files,
+			attachment: attch,
 			"recipient-variables": recipientVariables
 		};
 
