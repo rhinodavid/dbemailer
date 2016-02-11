@@ -3,14 +3,20 @@ var exphbs = require('express-handlebars');
 var hbs = exphbs.create();
 var Readable = require('stream').Readable;
 var http = require('http');
+
 ///////////////////////////
 /*
 var apiKey = process.env.MAILGUN_API_KEY;
 var mailDomain = process.env.MAILGUN_EMAIL_DOMAIN;
 var mailgun = new Mailgun({apiKey: apiKey, domain: mailDomain});
 var request_mod		= require('request');
-var maybeStream = request_mod.post('https://httpbin.org/image');
-console.log(maybeStream);
+var maybeStream = request_mod.get({url: 'http://placehold.it/350x150', encoding: null});
+maybeStream.contentType = "image/jpg";
+maybeStream.filename  = "myimg.jpg";
+maybeStream.knownLength = 6486;
+//var attch = new mailgun.Attachment({data: maybeStream, filename: "davidname"});
+//attch.data = maybeStream;
+//console.log(attch);
 
 var data = {
 			from: 'mail@' + process.env.MAILGUN_EMAIL_DOMAIN,
@@ -28,8 +34,8 @@ var data = {
 				console.log("Sent confirmation email with files.");
 				console.log(body);
 			}
-		});
-*/
+		});*/
+
 ////////////////////8888888888888888888888888888888////////////////////////
 var email = {};
 var apiKey = process.env.MAILGUN_API_KEY;

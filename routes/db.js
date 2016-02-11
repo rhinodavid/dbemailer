@@ -119,6 +119,39 @@ function getStreamsForFiles(options, cb) {
 		}
 	});
 }
+//////////////////////////////////////////
+
+function deleteDownloads(cb) {
+	// deletes the files in the /dls directory
+	var dir = "./dls/";
+
+	fs.readdir(dir, function (error, files) {
+		if (error) {
+			cb(error);
+			return;
+		} else {
+			console.log("Deleting files from ", dir, ":");
+			console.log(files);
+			files.forEach(function (file){
+				var filePath = dir + file;
+				fs.stat(filePath, function (error, stats){
+					if (error) {
+						cb(error);
+						return;
+					} else {
+						if (stats.isFile()) {
+							fs.unlink(filePath, function (error) {
+								if (error) {
+									cb(error);
+								}
+							})
+						}
+					}
+				})
+			});
+		}
+	})
+}
 
 //////////////////////////////////////////
 
