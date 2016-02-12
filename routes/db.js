@@ -159,7 +159,7 @@ function downloadFiles(options, cb) {
 	// takes a file list downloads the files to a tmp directory
 	// If all files have not downloaded in 30 seconds function throws an error
 	// Callback is only called once all files have downloaded.
-	// Callback is cb(error) format
+	// Callback is cb(error, files) format with files being an array of file paths
 
 	// 									********
 	// options:
@@ -202,6 +202,7 @@ function downloadFiles(options, cb) {
 	}
 	var dir = "./dls";
 	var error = null;
+	var filePaths = [];
 	var numOfItems = fileList.length;
 	var itemsDownloadedOrSkipped = 0;
 	fileList.forEach(function (file){
@@ -210,7 +211,7 @@ function downloadFiles(options, cb) {
 			// only looking for files, other options are "folder" and "deleted"
 			itemsDownloadedOrSkipped++;
 			if ((itemsDownloadedOrSkipped == numOfItems) && (!hasTimedOut)) {
-				clearTimeout(timer);
+				clearTimeout(timer, filePaths);
 				cb(error);
 			}
 			return;
@@ -227,11 +228,12 @@ function downloadFiles(options, cb) {
 			itemsDownloadedOrSkipped++;
 			if ((itemsDownloadedOrSkipped == numOfItems) && (!hasTimedOut)) {
 				clearTimeout(timer);
-				cb(error);
+				cb(error, filePaths);
 			}
 			return;
 		}
-		var newDownload = fs.createWriteStream(dir + "/" + file.name);
+		var pathToFile = dir + "/" + file.name;
+		var newDownload = fs.createWriteStream(pathToFile);
 		var options = {
 					url: "https://content.dropboxapi.com/2/files/download",
 					method: 'POST',
@@ -250,9 +252,10 @@ function downloadFiles(options, cb) {
 			})
 			.pipe(newDownload).on('finish', function(){
 				itemsDownloadedOrSkipped++;
+				filePaths.push(pathToFile);
 				if ((itemsDownloadedOrSkipped == numOfItems) && (!hasTimedOut)) {
 					clearTimeout(timer);
-					cb(error);
+					cb(error, filePaths);
 				}
 			});
 
@@ -373,23 +376,24 @@ router.route('/webhook')
 			getUpdatedFiles(uid, function(error, files, access_token){
 				if (error) throw error;
 				console.log(files);
-				getStreamsForFiles({fileList: files, access_token: access_token, filter: ["pdf"]}, function (error, streams){
+				downloadFiles({fileList: files, access_token: access_token, filter: ["pdf"]}, function (error, filePaths){
 					if (error) {
 						throw error;
 						return;
-					}
-					//console.log("Got Streams for the files. Error: ", error);
-					//console.log("Streams: ", streams);
-					User.find({status: "confirmed"}, function (error, users) {
-						if (error) throw error;
-						emailSender.sendFiles(users, streams, function(error){
-							console.log("Sent files with error: ", error);
+					} else {
+						User.find({status: "confirmed"}, function (error, users) {
+							if (error) throw error;
+							emailSender.sendFiles(users, filePaths, function(error){
+								console.log("Sent files with error: ", error);
+								deleteDownloads(function (error){
+									if (error) {
+										console.log("Error deleting downloads: ", error);
+									}
+								});
+							});
 						});
-					});
+					}		
 				});
-				/*downloadFiles({fileList: files, access_token: access_token, filter: ["pdf"]}, function(error){
-					console.log("Downloaded the files. Error: ", error);
-				});*/
 			});
 		});
 	});
