@@ -135,34 +135,37 @@ function getMailgunAttachments(options, cb) {
 		var options = {
 					url: "https://content.dropboxapi.com/2/files/download",
 					method: 'POST',
+					encoding: null,
 					headers: 
    						{ 
      						'Dropbox-API-Arg': '{"path":"'+file.id+'"}',
     					 	Authorization: 'Bearer ' + access_token
     					}
 		};
-		
+	
+	
 		request_mod.post(options, function (error, response, body){
 			if (error) {
 				cb(error);
 				return;
 			} else {
-				var fileBuffer = new Buffer(body);
 
 				var newAttch = new mailgun.Attachment({
-					data: fileBuffer,
+					data: body,
 					filename: file.name,
 					knownLength: file.size
 					//contentType: 'application/pdf'
 				});
+
 				attachments.push(newAttch);
+				
 				itemsDownloadedOrSkipped++;
 				if((itemsDownloadedOrSkipped==numOfItems) && (!hasTimedOut)) {
 					clearTimeout(timer);
 					cb(error, attachments);
 				}
 			}
-		});
+		})
 	});
 
 }

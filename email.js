@@ -70,9 +70,9 @@ email.sendFiles = function (users, attachments, cb) {
 			if (!(attachment instanceof mailgun.Attachment)) {
 				cb("Not all attachments are instances of Mailgun Attachments");
 			} else {
-				console.log(attachment.data.length);
-				console.log(attachment.filename);
-				console.log(attachment.knownLength);
+				//console.log(attachment.data.length);
+				//console.log(attachment.filename);
+				//console.log(attachment.knownLength);
 			}
 		})
 	}
@@ -80,9 +80,6 @@ email.sendFiles = function (users, attachments, cb) {
 		cb(error);
 		return;
 	}
-	
-	console.log('*****************');
-	console.log(attachments.length);
 
 	var domain = process.env.DOMAIN;
 	var httpScheme = process.env.HTTP_SCHEME || "https://";
@@ -109,7 +106,7 @@ email.sendFiles = function (users, attachments, cb) {
 		};
 	});
 
-	console.log(recipientVariables);
+	//console.log(recipientVariables);
 
 	hbs.renderView('views/email-transactional.handlebars', options, function (error, html){
 		if (error) {
@@ -131,7 +128,7 @@ email.sendFiles = function (users, attachments, cb) {
 				cb(error);
 				return;
 			} else {
-				console.log("Sent confirmation email with files.");
+				console.log("Sent email with files.");
 				cb(null);
 			}
 		});
