@@ -54,6 +54,14 @@ email.sendFiles = function (users, files, cb) {
 	if (typeof files == "string") {
 		attch[0] = files;
 	} else {
+		try {
+			files.length;
+		} catch (error) {
+			if (error) {
+				cb("Error with files array.");
+				return;
+			}
+		}
 		files.forEach(function (file){
 			/*attch.push(new mailgun.Attachment({
 				data: file, // Not accepting this since file is not a buffer or instanceof Readable
