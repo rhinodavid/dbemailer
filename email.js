@@ -4,73 +4,86 @@ var hbs = exphbs.create();
 var Readable = require('stream').Readable;
 var http = require('http');
 
-///////////////////////////
+////////////////////////// 
 /*
+var email = {};
 var apiKey = process.env.MAILGUN_API_KEY;
 var mailDomain = process.env.MAILGUN_EMAIL_DOMAIN;
 var mailgun = new Mailgun({apiKey: apiKey, domain: mailDomain});
 var request_mod		= require('request');
-var maybeStream = request_mod.get({url: 'http://placehold.it/350x150', encoding: null});
-maybeStream.contentType = "image/jpg";
-maybeStream.filename  = "myimg.jpg";
-maybeStream.knownLength = 6486;
-//var attch = new mailgun.Attachment({data: maybeStream, filename: "davidname"});
-//attch.data = maybeStream;
-//console.log(attch);
+var options = {
+			url: "https://content.dropboxapi.com/2/files/download",
+			method: 'POST',
+			headers: 
+				{ 
+						'Dropbox-API-Arg': '{"path":"'+"id:o7Zz2-J5qpAAAAAAAAACpQ"+'"}',
+				 	Authorization: 'Bearer ' + 'DtP26nN-dyAAAAAAAAAAwU2QjzpSOOk1unkuy4LUxpZysOkFMX58AbmLBiS-4xZl'
+				}
+};
+request_mod.post(options, function (err, res, body) {
+	console.log(res);
+	//email.attch1 = new mailgun.Attachment({data: body, filename: "davidname.png", contentType: "image/png", knownLength: 6846});
+	var dataBuffer = new Buffer(body);
+	var attch = new mailgun.Attachment({data: dataBuffer, filename: "othername.pdf", contentType: "application/pdf"});
+	var data = {
+		from: 'mail@' + process.env.MAILGUN_EMAIL_DOMAIN,
+		to: "dawalsh+test@gmail.com",
+		subject: '[Schedule Mailer] TEST',
+		html: "<p>test 123</p>",
+		attachment: attch
+	};
 
-var data = {
-			from: 'mail@' + process.env.MAILGUN_EMAIL_DOMAIN,
-			to: "dawalsh+test@gmail.com",
-			subject: '[Schedule Mailer] TEST',
-			html: "<p>test 123</p>",
-			attachment: maybeStream
-		};
-
-		mailgun.messages().send(data, function (error, body) {
-			if (error) {
-				console.log("error");
-				return;
-			} else {
-				console.log("Sent confirmation email with files.");
-				console.log(body);
-			}
-		});*/
+	mailgun.messages().send(data, function (error, body) {
+		if (error) {
+			console.log("error");
+			return;
+		} else {
+			console.log("Sent confirmation email with files.");
+			console.log(body);
+		}
+	});
+});
+*/
 
 ////////////////////8888888888888888888888888888888////////////////////////
 var email = {};
 var apiKey = process.env.MAILGUN_API_KEY;
 var mailDomain = process.env.MAILGUN_EMAIL_DOMAIN;
 
-email.sendFiles = function (users, files, cb) {
+email.sendFiles = function (users, attachments, cb) {
 	/*******************************************
 	users: an array of User records to email
-	files: a filepath of stream (or array of either)
+	attachments: an array of mailgun attachemnts
 	cb: of the cb(error) format
 	********************************************/
 
 	var mailgun = new Mailgun({apiKey: apiKey, domain: mailDomain});
-	
-	var attch = [];
-	if (typeof files == "string") {
-		attch[0] = files;
-	} else {
-		try {
-			files.length;
-		} catch (error) {
-			if (error) {
-				cb("Error with files array.");
-				return;
-			}
-		}
-		files.forEach(function (file){
-			/*attch.push(new mailgun.Attachment({
-				data: file, // Not accepting this since file is not a buffer or instanceof Readable
-				filename: file.fileName
-			}));*/
-			file.filename = file.fileName;
-			attch.push(file);
-		});
+	if (attachments instanceof mailgun.Attachment) {
+		// make sure this is an array and not just one attachment
+		var a = [];
+		a[0] = attachments;
+		attachments = a;
+
 	}
+	try {
+		attachments.forEach(function(attachment){
+			if (!(attachment instanceof mailgun.Attachment)) {
+				cb("Not all attachments are instances of Mailgun Attachments");
+			} else {
+				console.log(attachment.data.length);
+				console.log(attachment.filename);
+				console.log(attachment.knownLength);
+			}
+		})
+	}
+	catch (error) {
+		cb(error);
+		return;
+	}
+	
+	console.log('*****************');
+	console.log(attachments.length);
+
 	var domain = process.env.DOMAIN;
 	var httpScheme = process.env.HTTP_SCHEME || "https://";
 	var message = "%recipient.name%, new flight schedules are attached.";
@@ -109,8 +122,8 @@ email.sendFiles = function (users, files, cb) {
 			to: emails,
 			subject: '[Schedule Mailer] ' + options.title,
 			html: html,
-			attachment: attch,
-			"recipient-variables": recipientVariables
+			"recipient-variables": recipientVariables,
+			attachment: attachments
 		};
 
 		mailgun.messages().send(data, function (error, body) {

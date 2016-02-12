@@ -17,15 +17,36 @@ var request_mod		= require('request');
 var fs 				= require('fs');
 var emailSender		= require('./../email');
 var User 			= require('./../models/user');
-var Readable 		= require('stream').Readable;
+var Mailgun 		= require('mailgun-js');
 
-//////////////////////////////////////////////////////////////
+/* Dropbox List_folder response example:
 
-function getStreamsForFiles(options, cb) {
-	// takes a file list and returns an array of request streams to download the files
-	// If function has not been completed in 30 seconds throw an error
-	// Callback is only called once all files have been added
-	// Callback is cb(error, stream-array) format
+{ '.tag': 'file',
+  name: 'Trim drawing.pdf',
+  path_lower: '/trim drawing.pdf',
+  id: 'id:o7Zz2-J5qpAAAAAAAAAAAw',
+  client_modified: '2016-01-26T01:11:56Z',
+  server_modified: '2016-01-26T01:11:56Z',
+  rev: '243c288b6',
+  size: 97465 }
+{ '.tag': 'file',
+  name: 'Breitling back.pdf',
+  path_lower: '/breitling back.pdf',
+  id: 'id:o7Zz2-J5qpAAAAAAAAAABA',
+  client_modified: '2016-01-26T01:20:07Z',
+  server_modified: '2016-01-26T01:20:07Z',
+  rev: '343c288b6',
+  size: 245061 }
+
+*/
+
+
+function getMailgunAttachments(options, cb) {
+
+	// takes a file list and builds Mailgun attachments for the files
+	// If all files have not downloaded in 30 seconds function throws an error
+	// Callback is only called once all attachments have been built
+	// Callback is cb(error, attachments) format with <attachments> ready to be sent with Mailgun API
 
 	// 									********
 	// options:
@@ -35,14 +56,19 @@ function getStreamsForFiles(options, cb) {
 	//		filter: 		OPTIONAL [Array] of strings representing file extensions to
 	//							download. For instance, pass ["pdf", "docx", "doc"] to
 	//							only download PDF and Word documents
-	// 									********
-
+	//      maxSize: 		OPTIONAL [Number](def: 1024000) The maximum file size, in bytes,
+	//      					to attempt to attach. Larger files will be ignored
+	//
+	var apiKey = process.env.MAILGUN_API_KEY;
+	var mailDomain = process.env.MAILGUN_EMAIL_DOMAIN;
+	var mailgun = new Mailgun({apiKey: apiKey, domain: mailDomain});
+	var maxSize = options.maxSize || 1024000;
 	var hasTimedOut = false;
 	var timer = setTimeout(function() {
 		// SEE: https://jsfiddle.net/LdaFw/1/
 	    // do something to handle the timeout case here
 	    // for exampe, pass a default value to your callback
-	    cb("Get streams timed out.");
+	    cb("Downloads timed out");
 
 	    // also, let the program remember that
 	    // it has timed out, so the exec-function 
@@ -67,17 +93,24 @@ function getStreamsForFiles(options, cb) {
 		filter.push(options.filter.shift().toLowerCase());
 	}
 	var error = null;
-	var fileStreams = [];
+	var attachments = [];
 	var numOfItems = fileList.length;
 	var itemsDownloadedOrSkipped = 0;
 	fileList.forEach(function (file){
-		//console.log("Attempting to get stream for file: ", file.name);
 		if (file['.tag'] != "file") {
 			// only looking for files, other options are "folder" and "deleted"
 			itemsDownloadedOrSkipped++;
 			if ((itemsDownloadedOrSkipped == numOfItems) && (!hasTimedOut)) {
 				clearTimeout(timer);
-				cb(error);
+				cb(error, attachments);
+			}
+			return;
+		}
+		if (file.size > maxSize) {
+			itemsDownloadedOrSkipped++;
+			if ((itemsDownloadedOrSkipped == numOfItems) && (!hasTimedOut)) {
+				clearTimeout(timer);
+				cb(error, attachments);
 			}
 			return;
 		}
@@ -93,64 +126,45 @@ function getStreamsForFiles(options, cb) {
 			itemsDownloadedOrSkipped++;
 			if ((itemsDownloadedOrSkipped == numOfItems) && (!hasTimedOut)) {
 				clearTimeout(timer);
-				cb(error);
+				cb(error, attachments);
 			}
 			return;
 		}
+		console.log(file.id);
+		console.log(access_token);
 		var options = {
 					url: "https://content.dropboxapi.com/2/files/download",
 					method: 'POST',
-					fileName: file.name,
 					headers: 
    						{ 
-     						'Dropbox-API-Arg': '{"path":"'+file.path_lower+'"}',
+     						'Dropbox-API-Arg': '{"path":"'+file.id+'"}',
     					 	Authorization: 'Bearer ' + access_token
     					}
-
 		};
 		
-		var stream = request_mod.post(options);
-		console.log("db.js stream is readable?: ", stream instanceof Readable)
-		fileStreams.push(stream);
-		itemsDownloadedOrSkipped++;
-		if ((itemsDownloadedOrSkipped == numOfItems) && (!hasTimedOut)) {
-			clearTimeout(timer);
-			cb(error, fileStreams);
-		}
+		request_mod.post(options, function (error, response, body){
+			if (error) {
+				cb(error);
+				return;
+			} else {
+				var fileBuffer = new Buffer(body);
+
+				var newAttch = new mailgun.Attachment({
+					data: fileBuffer,
+					filename: file.name,
+					knownLength: file.size
+					//contentType: 'application/pdf'
+				});
+				attachments.push(newAttch);
+				itemsDownloadedOrSkipped++;
+				if((itemsDownloadedOrSkipped==numOfItems) && (!hasTimedOut)) {
+					clearTimeout(timer);
+					cb(error, attachments);
+				}
+			}
+		});
 	});
-}
-//////////////////////////////////////////
 
-function deleteDownloads(cb) {
-	// deletes the files in the /dls directory
-	var dir = "./dls/";
-
-	fs.readdir(dir, function (error, files) {
-		if (error) {
-			cb(error);
-			return;
-		} else {
-			console.log("Deleting files from ", dir, ":");
-			console.log(files);
-			files.forEach(function (file){
-				var filePath = dir + file;
-				fs.stat(filePath, function (error, stats){
-					if (error) {
-						cb(error);
-						return;
-					} else {
-						if (stats.isFile()) {
-							fs.unlink(filePath, function (error) {
-								if (error) {
-									cb(error);
-								}
-							})
-						}
-					}
-				})
-			});
-		}
-	})
 }
 
 //////////////////////////////////////////
@@ -376,22 +390,19 @@ router.route('/webhook')
 			getUpdatedFiles(uid, function(error, files, access_token){
 				if (error) throw error;
 				console.log(files);
-				downloadFiles({fileList: files, access_token: access_token, filter: ["pdf"]}, function (error, filePaths){
+				getMailgunAttachments({fileList: files, access_token: access_token, filter: ["pdf"]}, function (error, attachments){
 					if (error) {
 						throw error;
 						return;
 					} else {
-						User.find({status: "confirmed"}, function (error, users) {
-							if (error) throw error;
-							emailSender.sendFiles(users, filePaths, function(error){
-								console.log("Sent files with error: ", error);
-								deleteDownloads(function (error){
-									if (error) {
-										console.log("Error deleting downloads: ", error);
-									}
+						if (attachments) {
+							User.find({status: "confirmed"}, function (error, users) {
+								if (error) throw error;
+								emailSender.sendFiles(users, attachments, function(error){
+									console.log("Sent files with error: ", error);
 								});
 							});
-						});
+						}
 					}		
 				});
 			});
