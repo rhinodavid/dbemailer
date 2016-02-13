@@ -1,8 +1,7 @@
-var Mailgun = require('mailgun-js');
-var exphbs = require('express-handlebars');
-var hbs = exphbs.create();
-var Readable = require('stream').Readable;
-var http = require('http');
+var Mailgun 	= require('mailgun-js');
+var exphbs 		= require('express-handlebars');
+var hbs 		= exphbs.create();
+var fs 			= require('fs');
 
 var email = {};
 var apiKey = process.env.MAILGUN_API_KEY;
@@ -41,9 +40,10 @@ email.sendFiles = function (users, attachments, cb) {
 
 	var domain = process.env.DOMAIN;
 	var httpScheme = process.env.HTTP_SCHEME || "https://";
-	var message = "%recipient.name%, new flight schedules are attached.";
-	var imgUrl = httpScheme + domain +'/logo_256.png';
+	var message = "%recipient.name%, new schedules are attached.";
+	var imgUrl = 'cid:logo_256.png';
 	var unsubscribeUrl = httpScheme + domain + '/users/unsubscribe/%recipient.token%';
+	var logoImg = fs.createReadStream(__dirname+'/public/logo_256.png');
 
 	var options = {
 		"title"				: "New Flight Schedules",
@@ -76,7 +76,8 @@ email.sendFiles = function (users, attachments, cb) {
 			subject: '[Schedule Mailer] ' + options.title,
 			html: html,
 			"recipient-variables": recipientVariables,
-			attachment: attachments
+			attachment: attachments,
+			inline: logoImg
 		};
 
 		mailgun.messages().send(data, function (error, body) {
@@ -99,8 +100,9 @@ email.sendEmailConfirmation = function (user, cb) {
 	var token = user.generateToken();
 	var link = httpScheme + domain + '/users/confirmemail/' + token;
 	var message = "%recipient.name%, <a href='"+link+"' alt='Confirmation link'>click here</a> to confirm your email address.";
-	var imgUrl = httpScheme + domain +'/logo_256.png';
+	var imgUrl = 'cid:logo_256.png';
 	var unsubscribeUrl = httpScheme + domain + '/users/unsubscribe/' + token;
+	var logoImg = fs.createReadStream(__dirname+'/public/logo_256.png');
 
 	var options = {
 		"title"				: "Confirm Your Email Address",
@@ -124,7 +126,8 @@ email.sendEmailConfirmation = function (user, cb) {
 			to: user.email,
 			subject: '[Schedule Mailer] ' + options.title,
 			html: html,
-			'recipient-variables': rv
+			'recipient-variables': rv,
+			inline: logoImg
 		};
 		mailgun.messages().send(data, function (error, body) {
 			if (error) {

@@ -8,9 +8,6 @@ var User 			= require('./../models/user');
 var config 			= require('./../config');
 var mongoose 		= require('mongoose');
 
-
-//mongoose.connect(config.database);
-
 var authenticate = express.Router();
 
 authenticate.use(urlencode, jsonencode, cookieParser(), function (request, response, next){
@@ -68,9 +65,6 @@ authenticate.use(urlencode, jsonencode, cookieParser(), function (request, respo
 							return response.redirect('/login?redirect=' + request.originalUrl);
 							}
 						}
-						console.log("Authenticating user email: " + user.email);
-						console.log("With id: " + user._id);
-						console.log("Admin status: " + user.admin);
 						request.decoded = {};
 						request.decoded._id = user._id;
 						request.decoded.email = user.email;

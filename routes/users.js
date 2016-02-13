@@ -171,6 +171,7 @@ router.route('/')
 								throw error;
 							}
 							emailSender.sendEmailConfirmation(user, function(error) {
+								console.log("Resent confirmation email to ", user.name);
 								if (error) throw error;
 							});
 							response.status(400).send('Your email is already registered. Check your inbox to confirm your address.');
