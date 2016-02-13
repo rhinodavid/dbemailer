@@ -358,7 +358,7 @@ router.route('/authenticate')
 			return response.status(400).json({ success: false, message: 'No password provided'});
 		}
 		User.findOne({
-			email: request.body.email
+			email: request.body.email.toLowerCase();
 		}, function (error, user){
 			if (error) {
 				throw error;
