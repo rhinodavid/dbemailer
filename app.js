@@ -74,7 +74,7 @@ app.use(function(error, request, response, next) {
 });
 
 app.use(function(request, response, next) {
-        var error = new Error('The URL you entered wasn\'t found.);
+        var error = new Error('The URL you entered wasn\'t found.');
         error.status = 404;
         next(error);
 });
