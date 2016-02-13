@@ -64,7 +64,7 @@ if (process.env.NODE_ENV === 'development') {
         response.status(error.status || 500);
         response.render('error', {
             message: error.message,
-            error: error
+            error: error.stack
         });
     });
 } else {
@@ -74,7 +74,8 @@ if (process.env.NODE_ENV === 'development') {
         console.error("Prod Error: ", error.message);
         response.status(error.status || 500);
         response.render('error', {
-            message: error.message
+            message: error.message,
+            error: null
         });
     });
 }
