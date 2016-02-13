@@ -1,35 +1,34 @@
-<div class="container">
-	<div class="row">
-		<h1>Dropbox Emailer Admin</h1>
-	</div>
-	<div class="alert row"></div>
-	<div class="row">
-		<h3>Password Change</h3>
-			<form name="password-change">
-	                <div class="form-group">
-	                        <label for="new-password">New Password:</label>
-	                        <input type="password" name="new-password" placeholder="Password">
-	                </div>
-	                <div class="form-group">
-	                        <label for="new-password-confirm">Confirm:</label>
-	                        <input type="password" name="new-password-confirm" placeholder="Repeat Password">
-	                </div>
-	                <input type="submit" class="btn btn-default"></button>
-	        </form>
-	</div>
-	<div class="row">
-		<h3>Users</h3>
-		<ul class="user-list list-unstyled"></ul>
-	</div>
-	<div class="row">
-		<h3>Dropbox Connection</h3>
-		<div id="dropbox-info"></div>
-		<a href="#" class="btn btn-small btn-primary" id="db-connect">Connect a Dropbox</a>
-	</div>
-	<div class="row">
-		<a href="#" id="logout-link">Logout</a>
-	</div>
+<div class="row">
+	<h1>Dropbox Emailer Admin</h1>
 </div>
+<div class="alert row"></div>
+<div class="row">
+	<h3>Password Change</h3>
+		<form name="password-change">
+                <div class="form-group">
+                        <label for="new-password">New Password:</label>
+                        <input type="password" name="new-password" placeholder="Password">
+                </div>
+                <div class="form-group">
+                        <label for="new-password-confirm">Confirm:</label>
+                        <input type="password" name="new-password-confirm" placeholder="Repeat Password">
+                </div>
+                <input type="submit" class="btn btn-default"></button>
+        </form>
+</div>
+<div class="row">
+	<h3>Users</h3>
+	<ul class="user-list list-unstyled"></ul>
+</div>
+<div class="row">
+	<h3>Dropbox Connection</h3>
+	<div id="dropbox-info"></div>
+	<a href="#" class="btn btn-small btn-primary" id="db-connect">Connect a Dropbox</a>
+</div>
+<div class="row">
+	<a href="#" id="logout-link">Logout</a>
+</div>
+
 <div class="hide" id="db-app-key" data-key="{{db-app-key}}"></div>
 <div class="hide" id="uid" data-key="{{uid}}"></div>
 <script src="jquery-2.1.4.js"></script>

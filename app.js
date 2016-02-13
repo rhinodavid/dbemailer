@@ -49,11 +49,17 @@ app.get('/login', function (request, response, next) {
     response.render('login');
 });
 
+app.use(function (request, response, next) {
+        var error = new Error('The URL you entered wasn\'t found.');
+        error.status = 404;
+        console.log('calling next');
+        next(error);
+});
 
 if (process.env.NODE_ENV === 'development') {
     // development error handler
     // will print stacktrace
-    app.use(function(error, request, response, next) {
+    app.use(function (error, request, response, next) {
         console.log('Dev Error: ', error.message);
         response.status(error.status || 500);
         response.render('error', {
@@ -64,7 +70,7 @@ if (process.env.NODE_ENV === 'development') {
 } else {
     // production error handler
     // no stacktraces leaked to user
-    app.use(function(error, request, response, next) {
+    app.use(function (error, request, response, next) {
         console.log("Prod Error: ", error.message);
         response.status(error.status || 500);
         response.render('error', {
@@ -73,12 +79,5 @@ if (process.env.NODE_ENV === 'development') {
         });
     });
 }
-
-app.use(function(request, response, next) {
-        var error = new Error('The URL you entered wasn\'t found.');
-        error.status = 404;
-        console.log('calling next');
-        next(error);
-});
 
 module.exports = app;
