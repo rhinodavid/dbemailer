@@ -1,21 +1,30 @@
 <div class="container">
-        <div class="row">
-                <h1>Dropbox Emailer</h1>
+        <div class="text-center col-xs-12">
+                <div class="alert"></div>
         </div>
-        <div class="alert"></div>
-        <div class="row">
-                <form name="signup">
-                        <div class="form-group">
-                                <label for="name">Callsign:</label>
-                                <input type="text" name="name" placeholder="Callsign">
+        <form name="signup" class="form-horizontal" role="form">
+                <div class="row">
+                        <div class="col-xs-12">
+                                <div class="form-group">
+                                        <label for="name" class="col-md-1 control-label">Name:</label>
+                                        <div class="col-md-11">
+                                                <input type="text" name="name" placeholder="You" class="form-control">
+                                        </div>
+                                </div>
                         </div>
-                        <div class="form-group">
-                                <label for="password">Email:</label>
-                                <input type="email" name="email" placeholder="you@sample.com">
+                        <div class="col-xs-12">
+                                <div class="form-group">
+                                        <label for="password" class="col-md-1 control-label">Email:</label>
+                                        <div class="col-md-11">
+                                                <input type="email" name="email" placeholder="you@sample.com" class="form-control">
+                                        </div>
+                                </div>
                         </div>
-                        <input type="submit" class="btn btn-default"></button>
-                </form>
-        </div>
+                        <div class="col-xs-12">
+                                <input type="submit" class="btn btn-default col-xs-12"></button>
+                        </div>
+                </div>
+        </form>
 </div>
 
 <script src="jquery-2.1.4.js"></script>
