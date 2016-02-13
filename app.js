@@ -60,7 +60,7 @@ if (process.env.NODE_ENV === 'development') {
     // development error handler
     // will print stacktrace
     app.use(function (error, request, response, next) {
-        console.log('Dev Error: ', error.message);
+        console.error('Dev Error: ', error.message);
         response.status(error.status || 500);
         response.render('error', {
             message: error.message,
@@ -71,11 +71,10 @@ if (process.env.NODE_ENV === 'development') {
     // production error handler
     // no stacktraces leaked to user
     app.use(function (error, request, response, next) {
-        console.log("Prod Error: ", error.message);
+        console.error("Prod Error: ", error.message);
         response.status(error.status || 500);
         response.render('error', {
-            message: error.message,
-            error: {}
+            message: error.message
         });
     });
 }
