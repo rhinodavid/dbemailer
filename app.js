@@ -66,7 +66,7 @@ if (process.env.NODE_ENV === 'development') {
 // no stacktraces leaked to user
 app.use(function(error, request, response, next) {
     console.log("ERROR: " + error.message);
-    response.status(error.status || 500).send('error');
+    response.status(error.status || 500);
     response.render('error', {
         message: error.message,
         error: {}
@@ -74,7 +74,7 @@ app.use(function(error, request, response, next) {
 });
 
 app.use(function(request, response, next) {
-        var error = new Error('Not Found');
+        var error = new Error('The URL you entered wasn\'t found.);
         error.status = 404;
         next(error);
 });
