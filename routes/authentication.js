@@ -5,7 +5,6 @@ var urlencode 		= bodyParser.urlencoded({extended: false});
 var jsonencode 		= bodyParser.json();
 var jwt 			= require('jsonwebtoken');
 var User 			= require('./../models/user');
-var config 			= require('./../config');
 var mongoose 		= require('mongoose');
 
 var authenticate = express.Router();
