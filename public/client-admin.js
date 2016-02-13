@@ -2,6 +2,10 @@
 
 $(function(){
 
+	$('a#logout-link').click(function(e){
+		logout();
+	});
+
 	$('.alert').hide();
 
 	$('form').on('submit', function(event){
@@ -125,6 +129,12 @@ $(function(){
 		$('#dropbox-info').html("<h5>"+name+"</h5><span class='small muted'>"+email+"</span>");
 	});
 });
+
+function logout() {
+	document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC";
+	localStorage.removeItem("token");
+	window.location = "/admin";
+}
 
 function getCookie(cname) {
     var name = cname + "=";
