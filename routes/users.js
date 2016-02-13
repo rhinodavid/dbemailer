@@ -119,7 +119,6 @@ router.route('/unsubscribe/:token')
                 		response.render('emailerror', {"message": "Could not find user.", "layout": "main"});
                 	} else {
                 		response.render('titleandmessage', {
-                			"layout": "main",
                 			"title": "Unsubcribed",
                 			"message": "You have been unsubscribed. You'll no longer recieve emails."
                 		});
