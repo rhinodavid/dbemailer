@@ -50,32 +50,34 @@ app.get('/login', function (request, response, next) {
 });
 
 
-// development error handler
-// will print stacktrace
 if (process.env.NODE_ENV === 'development') {
+    // development error handler
+    // will print stacktrace
     app.use(function(error, request, response, next) {
+        console.log('Dev Error: ', error.message);
         response.status(error.status || 500);
         response.render('error', {
             message: error.message,
             error: error
         });
     });
-}
-
-// production error handler
-// no stacktraces leaked to user
-app.use(function(error, request, response, next) {
-    console.log("ERROR: " + error.message);
-    response.status(error.status || 500);
-    response.render('error', {
-        message: error.message,
-        error: {}
+} else {
+    // production error handler
+    // no stacktraces leaked to user
+    app.use(function(error, request, response, next) {
+        console.log("Prod Error: ", error.message);
+        response.status(error.status || 500);
+        response.render('error', {
+            message: error.message,
+            error: {}
+        });
     });
-});
+}
 
 app.use(function(request, response, next) {
         var error = new Error('The URL you entered wasn\'t found.');
         error.status = 404;
+        console.log('calling next');
         next(error);
 });
 
