@@ -50,9 +50,10 @@ app.get('/login', function (request, response, next) {
 });
 
 app.use(function (request, response, next) {
-        var error = new Error('The URL you entered wasn\'t found.');
-        error.status = 404;
-        console.log('calling next');
+        if (!error) {
+            var error = new Error('The URL you entered wasn\'t found.');
+            error.status = 404;            
+        }
         next(error);
 });
 

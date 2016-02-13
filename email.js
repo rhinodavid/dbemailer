@@ -4,48 +4,6 @@ var hbs = exphbs.create();
 var Readable = require('stream').Readable;
 var http = require('http');
 
-////////////////////////// 
-/*
-var email = {};
-var apiKey = process.env.MAILGUN_API_KEY;
-var mailDomain = process.env.MAILGUN_EMAIL_DOMAIN;
-var mailgun = new Mailgun({apiKey: apiKey, domain: mailDomain});
-var request_mod		= require('request');
-var options = {
-			url: "https://content.dropboxapi.com/2/files/download",
-			method: 'POST',
-			headers: 
-				{ 
-						'Dropbox-API-Arg': '{"path":"'+"id:o7Zz2-J5qpAAAAAAAAACpQ"+'"}',
-				 	Authorization: 'Bearer ' + 'DtP26nN-dyAAAAAAAAAAwU2QjzpSOOk1unkuy4LUxpZysOkFMX58AbmLBiS-4xZl'
-				}
-};
-request_mod.post(options, function (err, res, body) {
-	console.log(res);
-	//email.attch1 = new mailgun.Attachment({data: body, filename: "davidname.png", contentType: "image/png", knownLength: 6846});
-	var dataBuffer = new Buffer(body);
-	var attch = new mailgun.Attachment({data: dataBuffer, filename: "othername.pdf", contentType: "application/pdf"});
-	var data = {
-		from: 'mail@' + process.env.MAILGUN_EMAIL_DOMAIN,
-		to: "dawalsh+test@gmail.com",
-		subject: '[Schedule Mailer] TEST',
-		html: "<p>test 123</p>",
-		attachment: attch
-	};
-
-	mailgun.messages().send(data, function (error, body) {
-		if (error) {
-			console.log("error");
-			return;
-		} else {
-			console.log("Sent confirmation email with files.");
-			console.log(body);
-		}
-	});
-});
-*/
-
-////////////////////8888888888888888888888888888888////////////////////////
 var email = {};
 var apiKey = process.env.MAILGUN_API_KEY;
 var mailDomain = process.env.MAILGUN_EMAIL_DOMAIN;
@@ -105,8 +63,6 @@ email.sendFiles = function (users, attachments, cb) {
 			name: user.name
 		};
 	});
-
-	//console.log(recipientVariables);
 
 	hbs.renderView('views/email-transactional.handlebars', options, function (error, html){
 		if (error) {

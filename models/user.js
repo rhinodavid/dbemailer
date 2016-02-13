@@ -67,8 +67,7 @@ userSchema.methods.comparePassword = function(candidatePassword, cb) {
 
 userSchema.methods.generateToken = function(cb) {
 	var user = this;
-	console.log("user.js: generating token for user: "+ user.name);
-	console.log("users.js: and email: "+ user.email);
+
 	var payload = {
 		_id: user._id,
 	};

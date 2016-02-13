@@ -130,8 +130,7 @@ function getMailgunAttachments(options, cb) {
 			}
 			return;
 		}
-		console.log(file.id);
-		console.log(access_token);
+
 		var options = {
 					url: "https://content.dropboxapi.com/2/files/download",
 					method: 'POST',
@@ -158,7 +157,7 @@ function getMailgunAttachments(options, cb) {
 				});
 
 				attachments.push(newAttch);
-				
+
 				itemsDownloadedOrSkipped++;
 				if((itemsDownloadedOrSkipped==numOfItems) && (!hasTimedOut)) {
 					clearTimeout(timer);
@@ -283,7 +282,7 @@ function getUpdatedFiles(uid,cb) {
 	// Takes a database UID and returns the updated files to the callback function
 	// Also returns the access_token used to access the files for follow-on functions
 	// Callback format is cb(error, files, access_token)
-	console.log("Getting updated files for uid: " + uid);
+	//console.log("Getting updated files for uid: " + uid);
 	Dropbox.findOne({uid: uid}, function (error, db){
 		if (error) {
 			cb(error);
@@ -384,24 +383,22 @@ router.route('/webhook')
 			response.send(request.query.challenge);
 		}
 	})
-	.post(jsonencode, function (request, response){
+	.post(jsonencode, function (request, response, next){
 		var data = request.body;
 		response.sendStatus(200);
 		data.delta.users.forEach(function (uid){
 			// Call the email - file function for each
 			// Dropbox account there is an update on
 			getUpdatedFiles(uid, function(error, files, access_token){
-				if (error) throw error;
-				console.log(files);
+				if (error) next(error);
 				getMailgunAttachments({fileList: files, access_token: access_token, filter: ["pdf"]}, function (error, attachments){
 					if (error) {
-						throw error;
-						return;
+						next(error);
 					} else {
-						if (attachments) {
+						if (attachments.length) {
 							User.find({status: "confirmed"}, function (error, users) {
-								if (error) throw error;
-								emailSender.sendFiles(users, attachments, function(error){
+								if (error) next(error);
+								emailSender.sendFiles(users, attachments, function (error){
 									console.log("Sent files with error: ", error);
 								});
 							});
@@ -452,8 +449,7 @@ router.route('/accountinfo')
 	});
 
 router.route('/addoauth')
-	.get(urlencoded, function (request, response) {
-		console.log("code is:" + request.query.code);
+	.get(urlencoded, function (request, response, next) {
 		var code = request.query.code;
 		var error = request.query.error;
 		var error_description = request.body.error_description;
@@ -479,7 +475,7 @@ router.route('/addoauth')
 				function (error, httpResponse, body){
 				if (error) {
 					console.log('error in post' + error);
-					throw error;
+					next(error);
 				} else {
 					if (httpResponse.statusCode != 200) {
 						//there was an error
@@ -493,7 +489,7 @@ router.route('/addoauth')
 						//clear out database since we're only holding 1 token
 						Dropbox.remove({}, function (error) {
 							if (error) {
-								throw error;
+								next(error);
 							} else {
 								//create the new entry
 								var db = new Dropbox({
