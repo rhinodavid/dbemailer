@@ -1,5 +1,4 @@
 
-
 $(function(){
 
 	$('a#logout-link').click(function(e){
