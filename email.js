@@ -20,7 +20,6 @@ email.sendFiles = function (users, attachments, cb) {
 		var a = [];
 		a[0] = attachments;
 		attachments = a;
-
 	}
 	try {
 		attachments.forEach(function(attachment){
@@ -69,10 +68,15 @@ email.sendFiles = function (users, attachments, cb) {
 			return;
 		}
 
+		var subject = '[Schedule Mailer] ' + options.title;
+		attachments.forEach(function (attachment){
+			subject = subject + ' ' + attachment.filename;
+		});
+
 		var data = {
 			from: 'mail@' + process.env.MAILGUN_EMAIL_DOMAIN,
 			to: emails,
-			subject: '[Schedule Mailer] ' + options.title,
+			subject: subject,
 			html: html,
 			"recipient-variables": recipientVariables,
 			attachment: attachments
@@ -137,5 +141,63 @@ email.sendEmailConfirmation = function (user, cb) {
 	});
 };
 
+
+email.sendEmail = function (users, options, cb) {
+	// send an email to users
+	// options:
+	//   title (string)
+	//   message (string)
+
+	var mailgun = new Mailgun({apiKey: apiKey, domain: mailDomain});
+
+	var domain = process.env.DOMAIN;
+	var httpScheme = process.env.HTTP_SCHEME || "https://";
+	var message = message;
+	var imgUrl = httpScheme + domain +'/logo_256.png';
+	var unsubscribeUrl = httpScheme + domain + '/users/unsubscribe/%recipient.token%';
+
+	var options = {
+		"title"				: options.title || "Message from Schedle Mailer",
+		"message"			: options.message || "",
+		"img-url"			: imgUrl,
+		"unsubscribe-url"	: unsubscribeUrl,
+	};
+
+	//build the user email list and recipient varialbes
+	var emails = [];
+	var recipientVariables = {};
+	users.forEach(function(user){
+		emails.push(user.name + " <" + user.email + ">");
+		recipientVariables[user.email] = {
+			name: user.name
+		};
+	});
+
+	hbs.renderView('views/email-transactional.handlebars', options, function (error, html){
+		if (error) {
+			cb(error);
+			return;
+		}
+
+		var subject = '[Schedule Mailer] ' + options.title;
+
+		var data = {
+			from: 'mail@' + process.env.MAILGUN_EMAIL_DOMAIN,
+			to: emails,
+			subject: subject,
+			html: html,
+			"recipient-variables": recipientVariables,
+		};
+
+		mailgun.messages().send(data, function (error, body) {
+			if (error) {
+				cb(error);
+				return;
+			} else {
+				cb(null);
+			}
+		});
+	});
+};
 
 module.exports = email;

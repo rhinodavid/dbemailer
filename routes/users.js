@@ -13,8 +13,13 @@ var authenticate	= require('./authentication');
 var exphbs          = require('express-handlebars');
 var emailSender		= require('./../email');
 
+var confirmedTimer;
+var noticeDelay = 2 * 60 * 60 * 1000;	// wait two hours before sending a notice to the
+										// administrators that a user is waiting to be
+										// confirmed
+
 router.route('/confirmemail/:token')
-.get(function(request, response) {
+.get(function (request, response, next) {
     var token = request.params.token;
     if(!token) {
         response.render('emailerror', {"message": "No token was provided", "layout": "main"});
@@ -62,6 +67,29 @@ router.route('/confirmemail/:token')
                 							"error": "There was an error confirming your email."
                 						});
                 					} else {
+                						if (typeof confirmedTimer == "undefined") {
+                							// ensure existance of confirmedTimer
+                							confirmedTimer = {};
+                						}
+                						if (confirmedTimer._idleNext) {
+                							// there is a timer counting down to send a notice
+                							// to the administrators; don't do anything
+                						} else {
+                							confirmedTimer = setTimeout(function(){
+												User.find({admin: true}, function (error, users){
+	                								if (error) next(error);
+	                								emailSender.sendEmail(users,
+	                									{ message: "New users are waiting to be confirmed.",
+	                								      title: "Administrator Notice"} , function (error){
+		                								if (error) {
+		                									console.log("Error sending Administrator Notice of new users waiting to be confirmed.");
+		                									next(error);
+		                								}
+	                								});
+	                							});                  								
+                							}, noticeDelay || 1 *60 * 60 * 1000);  
+                						}
+
                 						var message = "Congratulations " + user.name + ", your email has been confirmed. Once an administrator also confirms it, you'll begin receiving emails.";
                 						response.render('titleandmessage', {
                 							"layout": "main",
@@ -120,11 +148,16 @@ router.route('/unsubscribe/:token')
 
 router.route('/')
 	.post(urlencode, function(request, response){
-		var name = request.body.name;
+		var name = request.body.name.trim();
 		var email = request.body.email.toLowerCase();
 
 		if(!validator.isEmail(email)) {
 			response.status(400).send('Invalid email address');
+			return false;
+		}
+
+		if(name.length < 2) {
+			response.status(400).send('Must be two characters long');
 			return false;
 		}
 
