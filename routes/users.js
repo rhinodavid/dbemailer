@@ -13,18 +13,6 @@ var authenticate	= require('./authentication');
 var exphbs          = require('express-handlebars');
 var emailSender		= require('./../email');
 
-router.route('/testsend')
-	.get(function (request, response) {
-		var files = [__dirname+"/db.js", __dirname+"/authentication.js"];
-		User.find({status: "confirmed"}, function(error, users){
-			emailSender.sendFiles(users, files, function(e){
-				console.log("File send callback with error: ", e);
-				response.send("File send callback with error:", e);
-			});
-		});
-	});
-
-
 router.route('/confirmemail/:token')
 .get(function(request, response) {
     var token = request.params.token;
@@ -352,7 +340,6 @@ router.route('/:id')
 
 router.route('/authenticate')
 	.post(urlencode, jsonencode, function (request, response){
-		console.log('user/authenticate: ' + request.body.email + " " + request.body.password);
 		if (!request.body.password) {
 			//no password was provided
 			return response.status(400).json({ success: false, message: 'No password provided'});
@@ -371,15 +358,12 @@ router.route('/authenticate')
 				user.comparePassword(request.body.password, function (error, isMatch){
 					if (error) throw error;
 					if (isMatch) {
-						
 						var token = user.generateToken();
-
 						response.json({
 							"success": true,
 							"message": 'Token is included in response',
 							"token": token
 						})
-
 					} else {
 						//wrong password
 						return response.status(400).json({ "success": false, "message": "Authentication failed. Wrong password."});
