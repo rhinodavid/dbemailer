@@ -1,6 +1,6 @@
 {
   "name": "dbemailer",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "descritption": "Watches a Dropbox and emails out new files to a list of users",
   "author": "David Walsh",
   "main": "app.js",
