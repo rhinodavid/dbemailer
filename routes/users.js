@@ -14,7 +14,7 @@ var exphbs          = require('express-handlebars');
 var emailSender		= require('./../email');
 
 var confirmedTimer;
-var noticeDelay =  10 * 60 * 1000;		// wait 10 min before sending a notice to the
+var noticeDelay =  5 * 60 * 1000;		// wait 10 min before sending a notice to the
 										// administrators that a user is waiting to be
 										// confirmed
 
@@ -75,9 +75,11 @@ router.route('/confirmemail/:token')
                 							// there is a timer counting down to send a notice
                 							// to the administrators; don't do anything
                 						} else {
+                							console.log("Setting timer to send confirmation email.");
                 							confirmedTimer = setTimeout(function(){
 												User.find({admin: true}, function (error, users){
 	                								if (error) next(error);
+	                								console.log("Sending confirmation email.");
 	                								emailSender.sendEmail(users,
 	                									{ message: "New users are waiting to be confirmed.",
 	                								      title: "Administrator Notice"} , function (error){
