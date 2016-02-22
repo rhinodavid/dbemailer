@@ -14,7 +14,7 @@ var exphbs          = require('express-handlebars');
 var emailSender		= require('./../email');
 
 var confirmedTimer;
-var noticeDelay = 2 * 60 * 60 * 1000;	// wait two hours before sending a notice to the
+var noticeDelay =  10 * 60 * 1000;		// wait 10 min before sending a notice to the
 										// administrators that a user is waiting to be
 										// confirmed
 
