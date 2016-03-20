@@ -27,7 +27,7 @@ If you're running the app on Heroku, use commands like `heroku config:set SECRET
 
 To run the app locally execute `./bin/www`. To get the app in production push the repositiory to Heroku or your provider of choice.
 
-###customizing the app
+###Customizing the app
 
 To change what file types are emailed, in the `routes/dj.js` file go to the `/webhook` endpoint. Look for the `getMailgunAttachments` and change the array that is the value of the `filter` key to include all the file exstensions you want mailed. 
 
