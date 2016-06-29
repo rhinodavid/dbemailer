@@ -256,7 +256,7 @@ function getUpdatedFiles(uid,cb) {
 						cb(null, updatedFiles, db.access_token);
 					} else {
 						console.log("hasMore was true.. recursively calling getUpdatedFilesFromDropbox");
-						getUpdatedFileFromDropbox(cursor, updatedFiles);
+						getUpdatedFilesFromDropbox(cursor, updatedFiles);
 					}
 				});
 			}
