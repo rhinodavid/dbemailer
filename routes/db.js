@@ -187,7 +187,7 @@ function getUpdatedFiles(uid,cb) {
 			if (!cursor) {
 				var post_data = {
 					"path": "",
-					"recursive": true,
+					"recursive": false, //don't try to email anything but in the normal folder
 					"include_media_info": false,
 					"include_deleted": false
 				};
